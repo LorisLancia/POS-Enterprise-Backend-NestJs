@@ -15,7 +15,7 @@ import { PrismaModule } from '../prisma/prisma.module';
       secret:
         process.env.JWT_SECRET ||
         'pos-enterprise-secret-key-change-in-production',
-      signOptions: { expiresIn: '8h' },
+      signOptions: { expiresIn: '12h' },
     }),
   ],
   providers: [AuthService, SeedService, JwtStrategy],

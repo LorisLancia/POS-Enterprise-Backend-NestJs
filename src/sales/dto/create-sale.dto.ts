@@ -5,7 +5,6 @@ import {
   IsInt,
   IsArray,
   ValidateNested,
-  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -50,7 +49,7 @@ class SaleItemDto {
 
 class PaymentDto {
   @IsString()
-  method: string; // 'cash', 'card', 'qr', 'transfer', 'voucher'
+  method: string;
 
   @IsNumber()
   amount: number;
@@ -69,6 +68,22 @@ export class CreateSaleDto {
 
   @IsInt()
   shiftId: number;
+
+  @IsOptional()
+  @IsNumber()
+  startingCash?: number;
+
+  @IsOptional()
+  @IsInt()
+  userId?: number;
+
+  @IsOptional()
+  @IsInt()
+  storeId?: number;
+
+  @IsOptional()
+  @IsString()
+  clientSaleId?: string;
 
   @IsOptional()
   @IsNumber()

@@ -5,30 +5,75 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { OpenShiftDto } from './dto/open-shift.dto';
 import { CloseShiftDto } from './dto/close-shift.dto';
 
 @Injectable()
 export class SalesService {
   constructor(private prisma: PrismaService) {}
 
-  // ==================== SALES ====================
   async createSale(storeId: number, userId: number, dto: CreateSaleDto) {
-    // Validate shift is open
-    const shift = await this.prisma.shift.findUnique({
-      where: { id: dto.shiftId },
+    console.log('>>> createSale called', {
+      storeId,
+      userId,
+      posClientId: dto.posClientId,
+      shiftId: dto.shiftId,
+      clientSaleId: dto.clientSaleId,
+    });
+
+    // Controllo duplicati
+    if (dto.clientSaleId) {
+      const existing = await this.prisma.sale.findUnique({
+        where: { clientSaleId: dto.clientSaleId },
+      });
+      if (existing) {
+        console.log(
+          '>>> Duplicate sale detected, returning existing:',
+          existing.id,
+        );
+        return this.prisma.sale.findUnique({
+          where: { id: existing.id },
+          include: { items: { include: { modifiers: true } }, payments: true },
+        });
+      }
+    }
+
+    // TROVA O CREA shift
+    let shift = await this.prisma.shift.findFirst({
+      where: { id: dto.shiftId, posClientId: dto.posClientId, status: 'open' },
       include: { posClient: true },
     });
-    if (!shift || shift.status !== 'open') {
-      throw new BadRequestException('Shift is not open');
+
+    if (!shift) {
+      shift = await this.prisma.shift.findFirst({
+        where: { posClientId: dto.posClientId, status: 'open' },
+        include: { posClient: true },
+      });
     }
+
+    if (!shift) {
+      console.log('>>> Creating new shift automatically');
+      shift = await this.prisma.shift.create({
+        data: {
+          posClientId: dto.posClientId,
+          userId: userId,
+          startingCash: dto.startingCash ?? 0,
+          status: 'open',
+        },
+        include: { posClient: true },
+      });
+      console.log('>>> New shift created with ID:', shift.id);
+    }
+
     if (shift.posClient.storeId !== storeId) {
       throw new BadRequestException('Shift does not belong to this store');
     }
 
+    const serverShiftId = shift.id;
+
     // Calculate totals
     let subtotal = 0;
     let totalTax = 0;
-
     const saleItemsData: any[] = [];
 
     for (const item of dto.items) {
@@ -51,8 +96,6 @@ export class SalesService {
       const itemTotal = unitPrice * item.quantity;
       const itemDiscount = item.discountAmount ?? 0;
       const itemSubtotal = itemTotal - itemDiscount;
-
-      // Calculate tax per item
       const taxRate = product.taxRate.toNumber() / 100;
       const itemTax = itemSubtotal * taxRate;
 
@@ -68,11 +111,9 @@ export class SalesService {
             where: { id: mod.modifierOptionId },
           });
           if (!option || !option.isActive) continue;
-
           const modPrice =
             option.priceAdjustment.toNumber() * (mod.quantity ?? 1);
           modifiersTotal += modPrice;
-
           modifiersData.push({
             modifierOptionId: mod.modifierOptionId,
             quantity: mod.quantity ?? 1,
@@ -96,7 +137,6 @@ export class SalesService {
     const discountTotal = dto.discountTotal ?? 0;
     const total = subtotal + totalTax - discountTotal;
 
-    // Validate payments
     const paymentTotal = dto.payments.reduce((sum, p) => sum + p.amount, 0);
     if (Math.abs(paymentTotal - total) > 0.01) {
       throw new BadRequestException(
@@ -105,17 +145,24 @@ export class SalesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // Generate sale number
       const count = await tx.sale.count({ where: { storeId } });
       const saleNumber = `S${storeId}-${String(count + 1).padStart(6, '0')}`;
 
-      // Create sale
+      console.log(
+        '>>> Creating sale with saleNumber:',
+        saleNumber,
+        'shiftId:',
+        serverShiftId,
+        'clientSaleId:',
+        dto.clientSaleId,
+      );
+
       const sale = await tx.sale.create({
         data: {
           storeId,
           warehouseId: dto.warehouseId,
           posClientId: dto.posClientId,
-          shiftId: dto.shiftId,
+          shiftId: serverShiftId,
           userId,
           saleNumber,
           subtotal,
@@ -125,6 +172,7 @@ export class SalesService {
           customerCount: dto.customerCount,
           tableNumber: dto.tableNumber,
           notes: dto.notes,
+          clientSaleId: dto.clientSaleId,
           items: {
             create: saleItemsData.map((sid: any) => ({
               productId: sid.productId,
@@ -148,13 +196,12 @@ export class SalesService {
         include: { items: { include: { modifiers: true } }, payments: true },
       });
 
-      // Deduct inventory from recipes
+      // Deduct inventory
       for (const item of dto.items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
           include: { recipes: { include: { material: true } } },
         });
-
         if (!product?.trackInventory) continue;
 
         for (const recipe of product.recipes) {
@@ -162,7 +209,6 @@ export class SalesService {
           const wastage = recipe.wastagePercent?.toNumber() ?? 0;
           const totalQty = qty + (qty * wastage) / 100;
 
-          // Create inventory transaction
           await tx.inventoryTransaction.create({
             data: {
               warehouseId: dto.warehouseId,
@@ -175,7 +221,6 @@ export class SalesService {
             },
           });
 
-          // Update inventory
           await tx.inventory.upsert({
             where: {
               warehouseId_materialId: {
@@ -193,6 +238,7 @@ export class SalesService {
         }
       }
 
+      console.log('>>> Sale created successfully:', sale.id, sale.saleNumber);
       return sale;
     });
   }
@@ -238,9 +284,7 @@ export class SalesService {
     return sale;
   }
 
-  // ==================== SHIFTS ====================
   async openShift(posClientId: number, userId: number, startingCash: number) {
-    // Check if there's already an open shift for this POS
     const existing = await this.prisma.shift.findFirst({
       where: { posClientId, status: 'open' },
     });
@@ -249,14 +293,8 @@ export class SalesService {
         'There is already an open shift for this POS',
       );
     }
-
     return this.prisma.shift.create({
-      data: {
-        posClientId,
-        userId,
-        startingCash,
-        status: 'open',
-      },
+      data: { posClientId, userId, startingCash, status: 'open' },
     });
   }
 
@@ -269,7 +307,6 @@ export class SalesService {
     if (shift.status !== 'open')
       throw new BadRequestException('Shift is already closed');
 
-    // Calculate expected cash
     const cashSales = shift.sales
       .flatMap((s) => s.payments)
       .filter((p) => p.method === 'cash')
@@ -327,12 +364,6 @@ export class SalesService {
         transactionCount: shift.sales.length,
       },
     };
-  }
-
-  // ==================== SYNC ====================
-  async syncOfflineSale(storeId: number, userId: number, dto: CreateSaleDto) {
-    // Same as createSale but marks as synced
-    return this.createSale(storeId, userId, dto);
   }
 
   async listShifts(storeId: number) {

@@ -48,4 +48,11 @@ export class AuthController {
   adminOnly() {
     return { message: 'You have permission to create users' };
   }
+  @Post('machine-token')
+  async machineToken(@Body() dto: { hardwareId: string; posClientId: number }) {
+    return this.authService.generateMachineToken(
+      dto.hardwareId,
+      dto.posClientId,
+    );
+  }
 }

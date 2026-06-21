@@ -82,4 +82,23 @@ export class AuthService {
       store: user.store.name,
     };
   }
+  async generateMachineToken(hardwareId: string, posClientId: number) {
+    const client = await this.prisma.pOSClient.findFirst({
+      where: { id: posClientId, hardwareId, isActive: true },
+    });
+
+    if (!client) {
+      throw new UnauthorizedException('POS Client not found or inactive');
+    }
+
+    const payload = {
+      sub: posClientId,
+      type: 'machine',
+      hardwareId,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload, { expiresIn: '3650d' }), // 10 anni
+    };
+  }
 }

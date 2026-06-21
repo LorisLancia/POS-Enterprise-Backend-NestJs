@@ -432,6 +432,7 @@ model Sale {
   storeId     Int      @map("store_id")
   warehouseId Int      @map("warehouse_id")
   posClientId Int      @map("pos_client_id")
+  clientSaleId    String?  @map("client_sale_id") @unique
   shiftId     Int      @map("shift_id")
   userId      Int      @map("user_id")
   saleNumber  String   @map("sale_number") // univoco per sede

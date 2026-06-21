@@ -23,7 +23,35 @@ import type { RequestWithUser } from '../common/types/request.types';
 export class SalesController {
   constructor(private salesService: SalesService) {}
 
-  // Shifts - route specifiche PRIMA di :id
+  @Post()
+  @UseGuards(PermissionsGuard)
+  @RequirePermission('sale:create')
+  createSale(@Body() dto: CreateSaleDto, @Request() req: RequestWithUser) {
+    const userId = dto.userId ?? req.user.userId;
+    const storeId = req.user?.storeId ?? dto.storeId ?? 1;
+    console.log('>>> Controller createSale:', {
+      storeId,
+      userId,
+      reqUser: req.user,
+    });
+    return this.salesService.createSale(storeId, userId, dto);
+  }
+
+  @Get()
+  @UseGuards(PermissionsGuard)
+  @RequirePermission('sale:read')
+  findAll(@Request() req: RequestWithUser) {
+    return this.salesService.findAllByStore(req.user.storeId);
+  }
+
+  @Get(':id')
+  @UseGuards(PermissionsGuard)
+  @RequirePermission('sale:read')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.salesService.findOne(id);
+  }
+
+  // Shifts
   @Post('shifts/open')
   @UseGuards(PermissionsGuard)
   @RequirePermission('sale:create')
@@ -60,36 +88,12 @@ export class SalesController {
     return this.salesService.getShiftReport(shiftId);
   }
 
-  // Sales
-  @Post()
-  @UseGuards(PermissionsGuard)
-  @RequirePermission('sale:create')
-  createSale(@Body() dto: CreateSaleDto, @Request() req: RequestWithUser) {
-    return this.salesService.createSale(req.user.storeId, req.user.userId, dto);
-  }
-
-  @Get()
-  @UseGuards(PermissionsGuard)
-  @RequirePermission('sale:read')
-  findAll(@Request() req: RequestWithUser) {
-    return this.salesService.findAllByStore(req.user.storeId);
-  }
-
-  @Get(':id')
-  @UseGuards(PermissionsGuard)
-  @RequirePermission('sale:read')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.salesService.findOne(id);
-  }
-
   // Public endpoint for POS sync
   @Post('sync')
   @Public()
   syncOfflineSale(@Body() dto: CreateSaleDto, @Request() req: RequestWithUser) {
-    return this.salesService.syncOfflineSale(
-      req.user.storeId,
-      req.user.userId,
-      dto,
-    );
+    const userId = dto.userId ?? req.user?.userId ?? 1;
+    const storeId = req.user?.storeId ?? dto.storeId ?? 1;
+    return this.salesService.createSale(storeId, userId, dto);
   }
 }

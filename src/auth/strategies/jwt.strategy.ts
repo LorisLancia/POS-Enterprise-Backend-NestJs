@@ -15,12 +15,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: {
-    sub: number;
-    username: string;
-    roleId: number;
-    storeId: number;
-  }) {
+  async validate(payload: any) {
+    console.log('>>> JwtStrategy payload:', JSON.stringify(payload));
+
+    if (payload.type === 'machine') {
+      console.log('>>> Machine token detected, storeId:', payload.storeId);
+      return {
+        userId: 0,
+        username: 'machine',
+        roleId: 0,
+        storeId: payload.storeId || 1,
+        permissions: ['*'],
+      };
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       include: { role: true },
