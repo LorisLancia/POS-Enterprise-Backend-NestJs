@@ -3,6 +3,128 @@ File di contesto condiviso per mantenere la continuità tra sessioni di lavoro. 
 
 ---
 
+Plain di partenza:
+┌─────────────────────────────────────────────────────────────────┐
+│ CLOUD DASHBOARD (Read-Only) │
+│ (Report multi-sede, aggregazione, analytics, stampa report) │
+│ ┌──────────────┐ ┌──────────────┐ │
+│ │ Sede A │ │ Sede B │ │
+│ │ PostgreSQL │◄────────►│ PostgreSQL │ │
+│ └──────────────┘ API └──────────────┘ │
+│ ▲ read-only sync (batch o streaming) │
+└────────────────┼──────────────────────────────────────────────┘
+│
+┌────────────┼────────────┬────────────┐
+│ │ │ │
+┌───▼───┐ ┌───▼───┐ ┌───▼───┐ ┌───▼───┐
+│Bar 1 │ │Bar 2 │ │Shisha │ │Main │
+│Client │ │Client │ │Client │ │Store │
+│ C# │ │ C# │ │ C# │ │Manager│
+│SQLite │ │SQLite │ │SQLite │ │Web │
+└───────┘ └───────┘ └───────┘ └───────┘
+
+---
+
+Stack Tecnologico di partenza:
+| Livello | Tecnologia | Motivazione |
+| --------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend sede** | **NestJS** (Node.js + TypeScript) | Enterprise-ready, modulare, dependency injection nativa, supporta microservizi, WebSocket, e ha un ecosistema molto ordinato per progetti grandi. |
+| **ORM** | **Prisma** | Type-safe, migrazioni automatiche robuste, supporta sia PostgreSQL che SQLite (stesso schema adattato). |
+| **DB Sede** | **PostgreSQL 16+** | JSONB per varianti/modifier flessibili, replication ready, ACID solido. |
+| **DB Client POS** | **SQLite** | Zero-config, file-based, perfetto per resilienza offline. |
+| **Frontend gestione** | **Angular 17+** | SPA robusta, moduli lazy-loaded, RxJS per stati reattivi, già nella tua roadmap. |
+| **Client POS** | **C# .NET 8 (WPF o WinUI 3)** | Performance Windows native, ottima gestione hardware POS (stampanti, scanner, drawer). |
+| **Comunicazione** | **REST API** + **WebSocket** (Socket.io) | REST per bulk sync; WebSocket per aggiornamenti real-time (prezzi, sospensione prodotti). |
+| **Cloud Report** | **Supabase** o **PostgreSQL cloud** + **Node.js** API read-only | Low-cost, PostgreSQL nativo, facile replica. Alternativa: VPS con PostgreSQL. |
+| **Mobile (futuro)** | **Flutter** | Dart, compile nativo iOS/Android, stesso team può mantenere logica condivisa. |
+
+---
+
+Struttura Core:
+
+-- TENANT & SEDE
+companies (id, name, tax_id, created_at)
+stores (id, company_id, name, address, timezone, currency, is_active)
+
+-- MAGAZZINO
+warehouses (id, store_id, name, type, is_active) -- 'main', 'bar_1', 'bar_2', 'shisha'
+warehouse_transfers (id, from_warehouse_id, to_warehouse_id, status, created_by, created_at)
+
+-- UTENTI & RBAC
+roles (id, name, permissions_json) -- ['product:read', 'sale:create', 'inventory:update']
+users (id, store_id, role_id, username, pin_hash, full_name, is_active)
+user_sessions (id, user_id, pos_client_id, token, started_at, ended_at)
+
+-- MATERIALI (raw materials per inventario)
+materials (id, store_id, name, unit, category, cost_per_unit, min_stock, is_active)
+-- unit: 'piece', 'gram', 'milliliter', 'bottle'
+
+-- PRODOTTI
+products (id, store_id, name, category_id, base_price, tax_rate, track_inventory, is_active, created_at)
+product_variants (id, product_id, sku, name, price_adjustment, is_active) -- es. Small / Large
+
+-- RICETTE / BOM (collega prodotto a materiali)
+product_recipes (id, product_id, material_id, variant_id, quantity, unit, wastage_percent)
+-- Se variant_id è null, vale per tutte le varianti
+
+-- MODIFIER & ADDON
+modifier_groups (id, store_id, name, selection_type, min_select, max_select, is_active)
+-- selection_type: 'single', 'multiple', 'optional', 'required'
+modifier_options (id, group_id, name, price_adjustment, material_id, quantity_consumed, is_active)
+product_modifiers (id, product_id, modifier_group_id, is_required, sort_order)
+
+-- INVENTARIO
+inventory (id, warehouse_id, material_id, quantity, reserved_quantity, last_updated)
+inventory_transactions (id, warehouse_id, material_id, type, quantity, reference_id, reference_type, created_by, created_at)
+-- type: 'purchase', 'sale', 'transfer_in', 'transfer_out', 'adjustment', 'waste'
+
+-- ACQUISTI
+purchase_orders (id, warehouse_id, supplier_id, status, total, created_by, created_at)
+po_items (id, po_id, material_id, quantity, unit_price, received_qty)
+
+-- CLIENT POS REGISTRATI
+pos_clients (id, store_id, name, location, hardware_id, last_sync_at, is_active)
+
+-- TURNO / CASSA
+shifts (id, pos_client_id, user_id, opened_at, closed_at, starting_cash, expected_cash, actual_cash, difference, status)
+cash_movements (id, shift_id, type, amount, reason, created_at) -- 'in' (fondo), 'out' (prelievo), 'adjustment'
+
+-- VENDITE
+sales (id, store_id, warehouse_id, pos_client_id, shift_id, user_id, sale_number, subtotal, tax_total, discount_total, total, status, created_at, synced_at)
+-- status: 'pending', 'completed', 'refunded', 'cancelled'
+sale_items (id, sale_id, product_id, variant_id, quantity, unit_price, total_price, cost_at_sale)
+sale_item_modifiers (id, sale_item_id, modifier_option_id, quantity, price_adjustment)
+
+-- PAGAMENTI
+payments (id, sale_id, method, amount, reference, is_refunded) -- 'cash', 'card', 'qr', 'transfer'
+
+-- SYNC LOG (per tracciare cosa è stato inviato al client)
+sync_metadata (id, pos_client_id, entity_type, last_version, last_sync_at)
+
+---
+
+Backend API di partenza:
+
+src/
+├── auth/ (JWT, PIN login, session management)
+├── users/ (CRUD utenti, ruoli)
+├── rbac/ (decorator @RequirePermission, guard)
+├── stores/ (gestione sede)
+├── warehouses/ (magazzini, trasferimenti)
+├── materials/ (materie prime)
+├── products/ (prodotti, varianti, ricette)
+├── modifiers/ (gruppi e opzioni)
+├── inventory/ (stock, movimenti, adjustment)
+├── purchases/ (PO, ricevimento merci)
+├── sales/ (vendite, refund, sospensioni)
+├── pos-clients/ (registrazione client, sync)
+├── sync/ (endpoint dedicati alla sincronizzazione)
+├── reports/ (report interni sede)
+├── websocket/ (gateway per push real-time)
+└── cloud-sync/ (batch export verso cloud dashboard)
+
+---
+
 Ultimo aggiornamento
 2026-06-24
 Stack tecnologico
