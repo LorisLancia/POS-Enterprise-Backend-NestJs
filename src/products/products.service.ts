@@ -39,12 +39,41 @@ export class ProductsService {
                 wastagePercent: r.wastagePercent ?? 0,
               })) || [],
           },
+          addons: {
+            create:
+              dto.addons?.map((a) => ({
+                name: a.name,
+                maxQuantity: a.maxQuantity ?? 0,
+                sortOrder: a.sortOrder ?? 0,
+                items: {
+                  create:
+                    a.items?.map(
+                      (item: {
+                        addonProductId: number;
+                        quantityValue?: number;
+                        sortOrder?: number;
+                      }) => ({
+                        addonProductId: item.addonProductId,
+                        quantityValue: item.quantityValue ?? 1,
+                        sortOrder: item.sortOrder ?? 0,
+                      }),
+                    ) || [],
+                },
+              })) || [],
+          },
         },
         include: {
           category: true,
           variants: true,
           recipes: { include: { material: true, variant: true } },
           modifiers: { include: { group: { include: { options: true } } } },
+          addons: {
+            include: {
+              items: {
+                include: { addonProduct: true },
+              },
+            },
+          },
         },
       });
 
@@ -58,7 +87,6 @@ export class ProductsService {
         });
       }
 
-      // Rileggi con include completi (usando tx, non this.prisma)
       return tx.product.findUnique({
         where: { id: product.id },
         include: {
@@ -66,6 +94,13 @@ export class ProductsService {
           variants: true,
           recipes: { include: { material: true, variant: true } },
           modifiers: { include: { group: { include: { options: true } } } },
+          addons: {
+            include: {
+              items: {
+                include: { addonProduct: true },
+              },
+            },
+          },
         },
       });
     });
@@ -79,6 +114,17 @@ export class ProductsService {
         variants: true,
         recipes: { include: { material: true, variant: true } },
         modifiers: { include: { group: { include: { options: true } } } },
+        addons: {
+          where: { isActive: true },
+          include: {
+            items: {
+              where: { isActive: true },
+              include: { addonProduct: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -92,6 +138,17 @@ export class ProductsService {
         variants: true,
         recipes: { include: { material: true, variant: true } },
         modifiers: { include: { group: { include: { options: true } } } },
+        addons: {
+          where: { isActive: true },
+          include: {
+            items: {
+              where: { isActive: true },
+              include: { addonProduct: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
     });
     if (!product) throw new NotFoundException('Product not found');
@@ -121,7 +178,6 @@ export class ProductsService {
   }
 
   async remove(id: number) {
-    // Soft delete
     return this.prisma.product.update({
       where: { id },
       data: { isActive: false },
@@ -185,6 +241,17 @@ export class ProductsService {
               },
             },
           },
+        },
+        addons: {
+          where: { isActive: true },
+          include: {
+            items: {
+              where: { isActive: true },
+              include: { addonProduct: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
         },
       },
     });

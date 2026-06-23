@@ -1,32 +1,32 @@
 import {
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsBoolean,
-  IsInt,
   IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class CreateVariantDto {
-  @IsString()
-  name: string;
-
+class ProductVariantDto {
   @IsOptional()
   @IsString()
   sku?: string;
 
+  @IsString()
+  name: string;
+
+  @IsOptional()
   @IsNumber()
-  priceAdjustment: number;
+  priceAdjustment?: number;
 }
 
-class CreateRecipeDto {
-  @IsInt()
+class ProductRecipeDto {
+  @IsNumber()
   materialId: number;
 
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   variantId?: number;
 
   @IsNumber()
@@ -40,12 +40,43 @@ class CreateRecipeDto {
   wastagePercent?: number;
 }
 
+class ProductAddonItemDto {
+  @IsNumber()
+  addonProductId: number;
+
+  @IsOptional()
+  @IsNumber()
+  quantityValue?: number;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
+class ProductAddonInlineDto {
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @IsNumber()
+  maxQuantity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductAddonItemDto)
+  items: ProductAddonItemDto[];
+}
+
 export class CreateProductDto {
   @IsString()
   name: string;
 
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   categoryId?: number;
 
   @IsOptional()
@@ -70,17 +101,23 @@ export class CreateProductDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateVariantDto)
-  variants?: CreateVariantDto[];
+  @Type(() => ProductVariantDto)
+  variants?: ProductVariantDto[];
 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateRecipeDto)
-  recipes?: CreateRecipeDto[];
+  @Type(() => ProductRecipeDto)
+  recipes?: ProductRecipeDto[];
 
   @IsOptional()
   @IsArray()
-  @IsInt({ each: true })
+  @IsNumber({}, { each: true })
   modifierGroupIds?: number[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductAddonInlineDto)
+  addons?: ProductAddonInlineDto[];
 }
