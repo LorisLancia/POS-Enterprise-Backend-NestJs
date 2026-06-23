@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
@@ -44,11 +45,14 @@ export class SalesController {
     return this.salesService.findAllByStore(req.user.storeId);
   }
 
-  @Get(':id')
+  // === ROUTE STATICHE PRIMA di quelle dinamiche (:id) ===
+
+  // Report - DEVE essere prima di @Get(':id')
+  @Get('report')
   @UseGuards(PermissionsGuard)
   @RequirePermission('sale:read')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.salesService.findOne(id);
+  getReport(@Query('from') from: string, @Query('to') to: string) {
+    return this.salesService.getReport(new Date(from), new Date(to));
   }
 
   // Shifts
@@ -95,5 +99,15 @@ export class SalesController {
     const userId = dto.userId ?? req.user?.userId ?? 1;
     const storeId = req.user?.storeId ?? dto.storeId ?? 1;
     return this.salesService.createSale(storeId, userId, dto);
+  }
+
+  // =======================================================
+
+  // Route dinamica PER ULTIMA
+  @Get(':id')
+  @UseGuards(PermissionsGuard)
+  @RequirePermission('sale:read')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.salesService.findOne(id);
   }
 }

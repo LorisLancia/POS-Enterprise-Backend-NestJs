@@ -374,4 +374,46 @@ export class SalesService {
       take: 20,
     });
   }
+
+  async getReport(from: Date, to: Date) {
+    const sales = await this.prisma.sale.findMany({
+      where: {
+        createdAt: {
+          gte: from,
+          lte: to,
+        },
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        shift: true,
+        payments: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const totalSales = sales.length;
+    const totalRevenue = sales.reduce((sum, s) => sum + Number(s.total), 0);
+    const totalItems = sales.reduce(
+      (sum, s) =>
+        sum + s.items.reduce((iSum, i) => iSum + Number(i.quantity), 0),
+      0,
+    );
+    const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+    return {
+      summary: {
+        totalSales,
+        totalRevenue,
+        totalItems,
+        averageTicket,
+      },
+      sales,
+    };
+  }
 }
