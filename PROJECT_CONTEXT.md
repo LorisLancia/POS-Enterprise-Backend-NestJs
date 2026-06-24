@@ -128,4 +128,4 @@ Come usare questo file nelle nuove chat Quando riapri una nuova sessione, fornis
 
 ---
 
-Generato il 2026-06-24. Modifica e aggiorna liberamente.
+Generato il 2026-06-24. Modifica e aggiorna liberamente...
