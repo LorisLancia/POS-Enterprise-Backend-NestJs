@@ -1,4 +1,3 @@
-// src/product-addon/product-addon.controller.ts
 import {
   Controller,
   Get,
@@ -11,31 +10,31 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ProductAddonService } from './product-addon.service';
-import { CreateProductAddonDto } from './dto/create-product-addon.dto';
-import { UpdateProductAddonDto } from './dto/update-product-addon.dto';
+import { UnitsService } from './units.service';
+import { CreateUnitDto } from './dto/create-unit.dto';
+import { UpdateUnitDto } from './dto/update-unit.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import type { RequestWithUser } from '../common/types/request.types';
 
-@Controller('product-addons')
+@Controller('units')
 @UseGuards(JwtAuthGuard)
-export class ProductAddonController {
-  constructor(private readonly service: ProductAddonService) {}
+export class UnitsController {
+  constructor(private service: UnitsService) {}
 
   @Post()
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:create')
-  create(@Body() dto: CreateProductAddonDto, @Request() req: RequestWithUser) {
+  create(@Body() dto: CreateUnitDto, @Request() req: RequestWithUser) {
     return this.service.create(req.user.storeId, dto);
   }
 
-  @Get('product/:productId')
+  @Get()
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:read')
-  findByProduct(@Param('productId', ParseIntPipe) productId: number) {
-    return this.service.findAllByProduct(productId);
+  findAll(@Request() req: RequestWithUser) {
+    return this.service.findAllByStore(req.user.storeId);
   }
 
   @Get(':id')
@@ -48,10 +47,7 @@ export class ProductAddonController {
   @Patch(':id')
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:update')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateProductAddonDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUnitDto) {
     return this.service.update(id, dto);
   }
 

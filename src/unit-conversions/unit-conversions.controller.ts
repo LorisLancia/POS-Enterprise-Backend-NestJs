@@ -1,4 +1,3 @@
-// src/product-addon/product-addon.controller.ts
 import {
   Controller,
   Get,
@@ -11,31 +10,34 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ProductAddonService } from './product-addon.service';
-import { CreateProductAddonDto } from './dto/create-product-addon.dto';
-import { UpdateProductAddonDto } from './dto/update-product-addon.dto';
+import { UnitConversionsService } from './unit-conversions.service';
+import { CreateUnitConversionDto } from './dto/create-unit-conversion.dto';
+import { UpdateUnitConversionDto } from './dto/update-unit-conversion.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import type { RequestWithUser } from '../common/types/request.types';
 
-@Controller('product-addons')
+@Controller('unit-conversions')
 @UseGuards(JwtAuthGuard)
-export class ProductAddonController {
-  constructor(private readonly service: ProductAddonService) {}
+export class UnitConversionsController {
+  constructor(private service: UnitConversionsService) {}
 
   @Post()
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:create')
-  create(@Body() dto: CreateProductAddonDto, @Request() req: RequestWithUser) {
+  create(
+    @Body() dto: CreateUnitConversionDto,
+    @Request() req: RequestWithUser,
+  ) {
     return this.service.create(req.user.storeId, dto);
   }
 
-  @Get('product/:productId')
+  @Get()
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:read')
-  findByProduct(@Param('productId', ParseIntPipe) productId: number) {
-    return this.service.findAllByProduct(productId);
+  findAll(@Request() req: RequestWithUser) {
+    return this.service.findAllByStore(req.user.storeId);
   }
 
   @Get(':id')
@@ -50,7 +52,7 @@ export class ProductAddonController {
   @RequirePermission('product:update')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateProductAddonDto,
+    @Body() dto: UpdateUnitConversionDto,
   ) {
     return this.service.update(id, dto);
   }

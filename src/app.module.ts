@@ -7,6 +7,8 @@ import { SalesModule } from './sales/sales.module';
 import { UsersModule } from './users/users.module';
 import { ProductAddonModule } from './product-addon/product-addon.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
+import { UnitsModule } from './units/units.module';
+import { UnitConversionsModule } from './unit-conversions/unit-conversions.module';
 
 // ... dentro @Module({ imports: [ ... ] })
 // Aggiungi ProductCategoriesModule alla lista
@@ -21,6 +23,8 @@ import { ProductCategoriesModule } from './product-categories/product-categories
     SalesModule,
     UsersModule,
     ProductAddonModule,
+    UnitsModule,
+    UnitConversionsModule,
   ],
 })
 export class AppModule {}

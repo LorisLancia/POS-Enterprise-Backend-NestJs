@@ -35,7 +35,7 @@ export class ProductsService {
                 materialId: r.materialId,
                 variantId: r.variantId,
                 quantity: r.quantity,
-                unit: r.unit,
+                unitId: r.unitId,
                 wastagePercent: r.wastagePercent ?? 0,
               })) || [],
           },
@@ -65,7 +65,13 @@ export class ProductsService {
         include: {
           category: true,
           variants: true,
-          recipes: { include: { material: true, variant: true } },
+          recipes: {
+            include: {
+              material: true,
+              variant: true, // AGGIUNGI
+              unit: true, // AGGIUNGI
+            },
+          },
           modifiers: { include: { group: { include: { options: true } } } },
           addons: {
             include: {
@@ -92,7 +98,7 @@ export class ProductsService {
         include: {
           category: true,
           variants: true,
-          recipes: { include: { material: true, variant: true } },
+          recipes: { include: { material: true, variant: true, unit: true } },
           modifiers: { include: { group: { include: { options: true } } } },
           addons: {
             include: {
@@ -112,7 +118,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: true,
-        recipes: { include: { material: true, variant: true } },
+        recipes: { include: { material: true, variant: true, unit: true } },
         modifiers: { include: { group: { include: { options: true } } } },
         addons: {
           where: { isActive: true },
@@ -136,7 +142,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: true,
-        recipes: { include: { material: true, variant: true } },
+        recipes: { include: { material: true, variant: true, unit: true } },
         modifiers: { include: { group: { include: { options: true } } } },
         addons: {
           where: { isActive: true },
@@ -171,7 +177,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: true,
-        recipes: { include: { material: true } },
+        recipes: { include: { material: true, unit: true } },
         modifiers: { include: { group: { include: { options: true } } } },
       },
     });
@@ -232,7 +238,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: { where: { isActive: true } },
-        recipes: { include: { material: true, variant: true } },
+        recipes: { include: { material: true, variant: true, unit: true } },
         modifiers: {
           include: {
             group: {

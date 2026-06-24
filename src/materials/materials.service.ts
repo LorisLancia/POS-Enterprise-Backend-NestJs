@@ -21,7 +21,7 @@ export class MaterialsService {
       data: {
         storeId,
         name: dto.name,
-        unit: dto.unit,
+        unitId: dto.unitId,
         category: dto.category,
         costPerUnit: dto.costPerUnit ?? 0,
         minStock: dto.minStock,
@@ -32,6 +32,7 @@ export class MaterialsService {
   async findAllMaterials(storeId: number) {
     return this.prisma.material.findMany({
       where: { storeId, isActive: true },
+      include: { unit: true }, // <-- AGGIUNGI
       orderBy: { name: 'asc' },
     });
   }

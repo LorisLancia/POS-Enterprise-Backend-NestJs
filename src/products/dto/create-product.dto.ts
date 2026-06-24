@@ -32,8 +32,8 @@ class ProductRecipeDto {
   @IsNumber()
   quantity: number;
 
-  @IsString()
-  unit: string;
+  @IsNumber()
+  unitId: number; // CHANGED: era unit string
 
   @IsOptional()
   @IsNumber()

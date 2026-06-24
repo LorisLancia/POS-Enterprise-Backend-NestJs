@@ -1,11 +1,12 @@
-import { IsString, IsOptional, IsNumber, IsInt } from 'class-validator';
+// src/materials/dto/create-material.dto.ts
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateMaterialDto {
   @IsString()
   name: string;
 
-  @IsString()
-  unit: string; // 'piece', 'gram', 'milliliter', 'bottle'
+  @IsNumber()
+  unitId: number; // <-- CHANGED: era unit string
 
   @IsOptional()
   @IsString()
