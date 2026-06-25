@@ -16,10 +16,10 @@ export class MaterialsService {
   constructor(private prisma: PrismaService) {}
 
   // ==================== MATERIALS ====================
-  async createMaterial(storeId: number, dto: CreateMaterialDto) {
+  async createMaterial(companyId: number, dto: CreateMaterialDto) {
     return this.prisma.material.create({
       data: {
-        storeId,
+        companyId,
         name: dto.name,
         unitId: dto.unitId,
         category: dto.category,
@@ -29,19 +29,19 @@ export class MaterialsService {
     });
   }
 
-  async findAllMaterials(storeId: number) {
+  async findAllMaterials(companyId: number) {
     return this.prisma.material.findMany({
-      where: { storeId, isActive: true },
+      where: { companyId, isActive: true },
       include: { unit: true }, // <-- AGGIUNGI
       orderBy: { name: 'asc' },
     });
   }
 
   // ==================== SUPPLIERS ====================
-  async createSupplier(storeId: number, dto: CreateSupplierDto) {
+  async createSupplier(companyId: number, dto: CreateSupplierDto) {
     return this.prisma.supplier.create({
       data: {
-        storeId,
+        companyId,
         name: dto.name,
         contact: dto.contact,
         phone: dto.phone,
@@ -51,9 +51,9 @@ export class MaterialsService {
     });
   }
 
-  async findAllSuppliers(storeId: number) {
+  async findAllSuppliers(companyId: number) {
     return this.prisma.supplier.findMany({
-      where: { storeId, isActive: true },
+      where: { companyId, isActive: true },
       orderBy: { name: 'asc' },
     });
   }
@@ -125,7 +125,11 @@ export class MaterialsService {
   }
 
   // ==================== PURCHASE ORDERS ====================
-  async createPurchaseOrder(storeId: number, userId: number, dto: CreatePODto) {
+  async createPurchaseOrder(
+    companyId: number,
+    userId: number,
+    dto: CreatePODto,
+  ) {
     const total = dto.items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
       0,
@@ -151,9 +155,9 @@ export class MaterialsService {
     });
   }
 
-  async findAllPurchaseOrders(storeId: number) {
+  async findAllPurchaseOrders(companyId: number) {
     return this.prisma.purchaseOrder.findMany({
-      where: { warehouse: { storeId } },
+      where: { warehouse: { companyId } },
       include: {
         items: { include: { material: true } },
         supplier: true,
@@ -239,7 +243,7 @@ export class MaterialsService {
 
   // ==================== TRANSFERS ====================
   async createTransfer(
-    storeId: number,
+    companyId: number,
     userId: number,
     dto: CreateTransferDto,
   ) {
@@ -253,8 +257,8 @@ export class MaterialsService {
     if (
       !fromWh ||
       !toWh ||
-      fromWh.storeId !== storeId ||
-      toWh.storeId !== storeId
+      fromWh.companyId !== companyId ||
+      toWh.companyId !== companyId
     ) {
       throw new NotFoundException('Warehouse not found in this store');
     }
@@ -270,10 +274,10 @@ export class MaterialsService {
     });
   }
 
-  async findAllTransfers(storeId: number) {
+  async findAllTransfers(companyId: number) {
     return this.prisma.warehouseTransfer.findMany({
       where: {
-        OR: [{ fromWarehouse: { storeId } }, { toWarehouse: { storeId } }],
+        OR: [{ fromWarehouse: { companyId } }, { toWarehouse: { companyId } }],
       },
       include: { fromWarehouse: true, toWarehouse: true, createdByUser: true },
       orderBy: { createdAt: 'desc' },

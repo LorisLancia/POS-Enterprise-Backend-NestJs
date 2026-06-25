@@ -26,5 +26,5 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsNumber()
-  storeId?: number;
+  companyId?: number;
 }

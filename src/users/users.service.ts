@@ -17,7 +17,7 @@ export class UsersService {
     username: true,
     fullName: true,
     isActive: true,
-    storeId: true,
+    companyId: true,
     createdAt: true,
     updatedAt: true,
     role: {
@@ -55,7 +55,10 @@ export class UsersService {
   async create(dto: CreateUserDto) {
     const existing = await this.prisma.user.findUnique({
       where: {
-        storeId_username: { storeId: dto.storeId || 1, username: dto.username },
+        companyId_username: {
+          companyId: dto.companyId || 1,
+          username: dto.username,
+        },
       },
     });
     if (existing)
@@ -70,7 +73,7 @@ export class UsersService {
         pinHash,
         fullName: dto.fullName,
         roleId,
-        storeId: dto.storeId || 1,
+        companyId: dto.companyId || 1,
         isActive: dto.isActive ?? true,
       },
       select: this.userSelect,
@@ -83,7 +86,7 @@ export class UsersService {
     const data: any = {
       fullName: dto.fullName,
       isActive: dto.isActive,
-      storeId: dto.storeId,
+      companyId: dto.companyId,
     };
 
     if (dto.role) {

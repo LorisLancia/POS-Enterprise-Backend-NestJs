@@ -34,14 +34,14 @@ export class MaterialsController {
     @Body() dto: CreateMaterialDto,
     @Request() req: RequestWithUser,
   ) {
-    return this.materialsService.createMaterial(req.user.storeId, dto);
+    return this.materialsService.createMaterial(req.user.companyId, dto);
   }
 
   @Get()
   @UseGuards(PermissionsGuard)
   @RequirePermission('inventory:read')
   findAllMaterials(@Request() req: RequestWithUser) {
-    return this.materialsService.findAllMaterials(req.user.storeId);
+    return this.materialsService.findAllMaterials(req.user.companyId);
   }
 
   // Suppliers
@@ -52,14 +52,14 @@ export class MaterialsController {
     @Body() dto: CreateSupplierDto,
     @Request() req: RequestWithUser,
   ) {
-    return this.materialsService.createSupplier(req.user.storeId, dto);
+    return this.materialsService.createSupplier(req.user.companyId, dto);
   }
 
   @Get('suppliers')
   @UseGuards(PermissionsGuard)
   @RequirePermission('inventory:read')
   findAllSuppliers(@Request() req: RequestWithUser) {
-    return this.materialsService.findAllSuppliers(req.user.storeId);
+    return this.materialsService.findAllSuppliers(req.user.companyId);
   }
 
   // Inventory
@@ -95,7 +95,7 @@ export class MaterialsController {
   @RequirePermission('inventory:create')
   createPO(@Body() dto: CreatePODto, @Request() req: RequestWithUser) {
     return this.materialsService.createPurchaseOrder(
-      req.user.storeId,
+      req.user.companyId,
       req.user.userId,
       dto,
     );
@@ -105,7 +105,7 @@ export class MaterialsController {
   @UseGuards(PermissionsGuard)
   @RequirePermission('inventory:read')
   findAllPOs(@Request() req: RequestWithUser) {
-    return this.materialsService.findAllPurchaseOrders(req.user.storeId);
+    return this.materialsService.findAllPurchaseOrders(req.user.companyId);
   }
 
   @Post('purchase-orders/:id/receive')
@@ -132,7 +132,7 @@ export class MaterialsController {
     @Request() req: RequestWithUser,
   ) {
     return this.materialsService.createTransfer(
-      req.user.storeId,
+      req.user.companyId,
       req.user.userId,
       dto,
     );
@@ -142,7 +142,7 @@ export class MaterialsController {
   @UseGuards(PermissionsGuard)
   @RequirePermission('inventory:read')
   findAllTransfers(@Request() req: RequestWithUser) {
-    return this.materialsService.findAllTransfers(req.user.storeId);
+    return this.materialsService.findAllTransfers(req.user.companyId);
   }
 
   @Post('transfers/:id/complete')

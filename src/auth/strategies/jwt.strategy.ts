@@ -19,12 +19,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     console.log('>>> JwtStrategy payload:', JSON.stringify(payload));
 
     if (payload.type === 'machine') {
-      console.log('>>> Machine token detected, storeId:', payload.storeId);
+      console.log('>>> Machine token detected, companyId:', payload.companyId);
       return {
         userId: 0,
         username: 'machine',
         roleId: 0,
-        storeId: payload.storeId || 1,
+        companyId: payload.companyId || 1,
         permissions: ['*'],
       };
     }
@@ -42,7 +42,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       userId: user.id,
       username: user.username,
       roleId: user.roleId,
-      storeId: user.storeId,
+      companyId: user.companyId,
       permissions: user.role.permissions as string[],
     };
   }

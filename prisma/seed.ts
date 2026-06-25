@@ -18,7 +18,7 @@ async function main() {
     where: { id: 1 },
     update: {},
     create: {
-      storeId: 1,
+      companyId: 1,
       name: 'Toppings',
       selectionType: 'MULTI',
       minSelect: 0,

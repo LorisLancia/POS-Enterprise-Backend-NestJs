@@ -31,5 +31,5 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsNumber()
-  storeId?: number;
+  companyId?: number;
 }

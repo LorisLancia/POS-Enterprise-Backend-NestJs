@@ -7,10 +7,10 @@ import { UpdateUnitDto } from './dto/update-unit.dto';
 export class UnitsService {
   constructor(private prisma: PrismaService) {}
 
-  create(storeId: number, dto: CreateUnitDto) {
+  create(companyId: number, dto: CreateUnitDto) {
     return this.prisma.unit.create({
       data: {
-        storeId,
+        companyId,
         name: dto.name,
         symbol: dto.symbol,
         type: dto.type || 'piece',
@@ -18,9 +18,9 @@ export class UnitsService {
     });
   }
 
-  findAllByStore(storeId: number) {
+  findAllByStore(companyId: number) {
     return this.prisma.unit.findMany({
-      where: { storeId, isActive: true },
+      where: { companyId, isActive: true },
       orderBy: { name: 'asc' },
     });
   }

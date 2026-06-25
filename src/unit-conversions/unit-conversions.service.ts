@@ -7,10 +7,10 @@ import { UpdateUnitConversionDto } from './dto/update-unit-conversion.dto';
 export class UnitConversionsService {
   constructor(private prisma: PrismaService) {}
 
-  create(storeId: number, dto: CreateUnitConversionDto) {
+  create(companyId: number, dto: CreateUnitConversionDto) {
     return this.prisma.unitConversion.create({
       data: {
-        storeId,
+        companyId,
         fromUnitId: dto.fromUnitId,
         toUnitId: dto.toUnitId,
         factor: dto.factor,
@@ -19,9 +19,9 @@ export class UnitConversionsService {
     });
   }
 
-  findAllByStore(storeId: number) {
+  findAllByStore(companyId: number) {
     return this.prisma.unitConversion.findMany({
-      where: { storeId, isActive: true },
+      where: { companyId, isActive: true },
       include: { fromUnit: true, toUnit: true },
       orderBy: { createdAt: 'desc' },
     });

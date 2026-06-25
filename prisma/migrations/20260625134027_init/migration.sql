@@ -2,10 +2,19 @@
 CREATE TABLE "companies" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
+    "legal_name" TEXT,
     "tax_id" TEXT,
+    "vat_number" TEXT,
     "address" TEXT,
+    "postal_code" TEXT,
+    "city" TEXT,
+    "province" TEXT,
+    "country" TEXT DEFAULT 'TH',
     "phone" TEXT,
     "email" TEXT,
+    "timezone" TEXT NOT NULL DEFAULT 'Asia/Bangkok',
+    "currency" TEXT NOT NULL DEFAULT 'THB',
+    "logo_url" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -14,26 +23,12 @@ CREATE TABLE "companies" (
 );
 
 -- CreateTable
-CREATE TABLE "stores" (
+CREATE TABLE "warehouses" (
     "id" SERIAL NOT NULL,
     "company_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "address" TEXT,
-    "timezone" TEXT NOT NULL DEFAULT 'Asia/Bangkok',
-    "currency" TEXT NOT NULL DEFAULT 'THB',
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "stores_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "warehouses" (
-    "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
+    "phone" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -69,7 +64,7 @@ CREATE TABLE "roles" (
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "role_id" INTEGER NOT NULL,
     "username" TEXT NOT NULL,
     "pin_hash" TEXT NOT NULL,
@@ -98,11 +93,37 @@ CREATE TABLE "user_sessions" (
 );
 
 -- CreateTable
+CREATE TABLE "units" (
+    "id" SERIAL NOT NULL,
+    "company_id" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "symbol" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'piece',
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "units_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "unit_conversions" (
+    "id" SERIAL NOT NULL,
+    "company_id" INTEGER NOT NULL,
+    "from_unit_id" INTEGER NOT NULL,
+    "to_unit_id" INTEGER NOT NULL,
+    "factor" DECIMAL(12,6) NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "unit_conversions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "materials" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
-    "unit" TEXT NOT NULL,
+    "unit_id" INTEGER NOT NULL,
     "category" TEXT,
     "cost_per_unit" DECIMAL(12,4) NOT NULL DEFAULT 0,
     "min_stock" DECIMAL(12,4),
@@ -115,7 +136,7 @@ CREATE TABLE "materials" (
 -- CreateTable
 CREATE TABLE "products" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "category_id" INTEGER,
     "sku" TEXT,
@@ -133,7 +154,7 @@ CREATE TABLE "products" (
 -- CreateTable
 CREATE TABLE "product_categories" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "color" TEXT,
     "sort_order" INTEGER NOT NULL DEFAULT 0,
@@ -161,7 +182,7 @@ CREATE TABLE "product_recipes" (
     "variant_id" INTEGER,
     "material_id" INTEGER NOT NULL,
     "quantity" DECIMAL(12,4) NOT NULL,
-    "unit" TEXT NOT NULL,
+    "unit_id" INTEGER NOT NULL,
     "wastage_percent" DECIMAL(5,2) NOT NULL DEFAULT 0,
 
     CONSTRAINT "product_recipes_pkey" PRIMARY KEY ("id")
@@ -170,7 +191,7 @@ CREATE TABLE "product_recipes" (
 -- CreateTable
 CREATE TABLE "modifier_groups" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "selection_type" TEXT NOT NULL,
     "min_select" INTEGER NOT NULL DEFAULT 0,
@@ -206,6 +227,44 @@ CREATE TABLE "product_modifiers" (
 );
 
 -- CreateTable
+CREATE TABLE "product_addons" (
+    "id" SERIAL NOT NULL,
+    "product_id" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "max_quantity" INTEGER NOT NULL DEFAULT 0,
+    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "product_addons_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "product_addon_items" (
+    "id" SERIAL NOT NULL,
+    "addon_id" INTEGER NOT NULL,
+    "addon_product_id" INTEGER NOT NULL,
+    "quantity_value" DECIMAL(12,4) NOT NULL DEFAULT 1,
+    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "product_addon_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "sale_item_addons" (
+    "id" SERIAL NOT NULL,
+    "sale_item_id" INTEGER NOT NULL,
+    "addon_product_id" INTEGER NOT NULL,
+    "quantity" DECIMAL(12,4) NOT NULL DEFAULT 1,
+    "quantity_value" DECIMAL(12,4) NOT NULL DEFAULT 1,
+    "unit_price" DECIMAL(12,2) NOT NULL,
+    "total_price" DECIMAL(12,2) NOT NULL,
+
+    CONSTRAINT "sale_item_addons_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "inventory" (
     "id" SERIAL NOT NULL,
     "warehouse_id" INTEGER NOT NULL,
@@ -237,7 +296,7 @@ CREATE TABLE "inventory_transactions" (
 -- CreateTable
 CREATE TABLE "suppliers" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "contact" TEXT,
     "phone" TEXT,
@@ -279,7 +338,8 @@ CREATE TABLE "po_items" (
 -- CreateTable
 CREATE TABLE "pos_clients" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
+    "warehouse_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "location" TEXT,
     "hardware_id" TEXT NOT NULL,
@@ -323,9 +383,10 @@ CREATE TABLE "cash_movements" (
 -- CreateTable
 CREATE TABLE "sales" (
     "id" SERIAL NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "warehouse_id" INTEGER NOT NULL,
     "pos_client_id" INTEGER NOT NULL,
+    "client_sale_id" TEXT,
     "shift_id" INTEGER NOT NULL,
     "user_id" INTEGER NOT NULL,
     "sale_number" TEXT NOT NULL,
@@ -386,7 +447,7 @@ CREATE TABLE "payments" (
 CREATE TABLE "sync_metadata" (
     "id" SERIAL NOT NULL,
     "pos_client_id" INTEGER NOT NULL,
-    "store_id" INTEGER NOT NULL,
+    "company_id" INTEGER NOT NULL,
     "entity_type" TEXT NOT NULL,
     "last_version" INTEGER NOT NULL,
     "last_sync_at" TIMESTAMP(3) NOT NULL,
@@ -398,25 +459,31 @@ CREATE TABLE "sync_metadata" (
 CREATE UNIQUE INDEX "roles_name_key" ON "roles"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_store_id_username_key" ON "users"("store_id", "username");
+CREATE UNIQUE INDEX "users_company_id_username_key" ON "users"("company_id", "username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "unit_conversions_company_id_from_unit_id_to_unit_id_key" ON "unit_conversions"("company_id", "from_unit_id", "to_unit_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "product_modifiers_product_id_group_id_key" ON "product_modifiers"("product_id", "group_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "product_addon_items_addon_id_addon_product_id_key" ON "product_addon_items"("addon_id", "addon_product_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "inventory_warehouse_id_material_id_key" ON "inventory"("warehouse_id", "material_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "sales_store_id_sale_number_key" ON "sales"("store_id", "sale_number");
+CREATE UNIQUE INDEX "sales_client_sale_id_key" ON "sales"("client_sale_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "sales_company_id_sale_number_key" ON "sales"("company_id", "sale_number");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "sync_metadata_pos_client_id_entity_type_key" ON "sync_metadata"("pos_client_id", "entity_type");
 
 -- AddForeignKey
-ALTER TABLE "stores" ADD CONSTRAINT "stores_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "warehouses" ADD CONSTRAINT "warehouses_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "warehouses" ADD CONSTRAINT "warehouses_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "warehouse_transfers" ADD CONSTRAINT "warehouse_transfers_from_warehouse_id_fkey" FOREIGN KEY ("from_warehouse_id") REFERENCES "warehouses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -428,7 +495,7 @@ ALTER TABLE "warehouse_transfers" ADD CONSTRAINT "warehouse_transfers_to_warehou
 ALTER TABLE "warehouse_transfers" ADD CONSTRAINT "warehouse_transfers_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "users" ADD CONSTRAINT "users_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "users" ADD CONSTRAINT "users_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -440,13 +507,31 @@ ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_user_id_fkey" FOREIGN 
 ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_pos_client_id_fkey" FOREIGN KEY ("pos_client_id") REFERENCES "pos_clients"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "materials" ADD CONSTRAINT "materials_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "units" ADD CONSTRAINT "units_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "products" ADD CONSTRAINT "products_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "unit_conversions" ADD CONSTRAINT "unit_conversions_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "unit_conversions" ADD CONSTRAINT "unit_conversions_from_unit_id_fkey" FOREIGN KEY ("from_unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "unit_conversions" ADD CONSTRAINT "unit_conversions_to_unit_id_fkey" FOREIGN KEY ("to_unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "materials" ADD CONSTRAINT "materials_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "materials" ADD CONSTRAINT "materials_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "products" ADD CONSTRAINT "products_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "products" ADD CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "product_categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "product_categories" ADD CONSTRAINT "product_categories_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -461,7 +546,10 @@ ALTER TABLE "product_recipes" ADD CONSTRAINT "product_recipes_variant_id_fkey" F
 ALTER TABLE "product_recipes" ADD CONSTRAINT "product_recipes_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "materials"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "modifier_groups" ADD CONSTRAINT "modifier_groups_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "product_recipes" ADD CONSTRAINT "product_recipes_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "modifier_groups" ADD CONSTRAINT "modifier_groups_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "modifier_options" ADD CONSTRAINT "modifier_options_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "modifier_groups"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -474,6 +562,21 @@ ALTER TABLE "product_modifiers" ADD CONSTRAINT "product_modifiers_product_id_fke
 
 -- AddForeignKey
 ALTER TABLE "product_modifiers" ADD CONSTRAINT "product_modifiers_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "modifier_groups"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "product_addons" ADD CONSTRAINT "product_addons_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "product_addon_items" ADD CONSTRAINT "product_addon_items_addon_id_fkey" FOREIGN KEY ("addon_id") REFERENCES "product_addons"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "product_addon_items" ADD CONSTRAINT "product_addon_items_addon_product_id_fkey" FOREIGN KEY ("addon_product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "sale_item_addons" ADD CONSTRAINT "sale_item_addons_sale_item_id_fkey" FOREIGN KEY ("sale_item_id") REFERENCES "sale_items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "sale_item_addons" ADD CONSTRAINT "sale_item_addons_addon_product_id_fkey" FOREIGN KEY ("addon_product_id") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "inventory" ADD CONSTRAINT "inventory_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "warehouses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -491,7 +594,7 @@ ALTER TABLE "inventory_transactions" ADD CONSTRAINT "inventory_transactions_mate
 ALTER TABLE "inventory_transactions" ADD CONSTRAINT "inventory_transactions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "suppliers" ADD CONSTRAINT "suppliers_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "suppliers" ADD CONSTRAINT "suppliers_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "purchase_orders" ADD CONSTRAINT "purchase_orders_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "warehouses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -509,7 +612,10 @@ ALTER TABLE "po_items" ADD CONSTRAINT "po_items_po_id_fkey" FOREIGN KEY ("po_id"
 ALTER TABLE "po_items" ADD CONSTRAINT "po_items_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "materials"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "pos_clients" ADD CONSTRAINT "pos_clients_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "pos_clients" ADD CONSTRAINT "pos_clients_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "pos_clients" ADD CONSTRAINT "pos_clients_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "warehouses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "shifts" ADD CONSTRAINT "shifts_pos_client_id_fkey" FOREIGN KEY ("pos_client_id") REFERENCES "pos_clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -524,7 +630,7 @@ ALTER TABLE "cash_movements" ADD CONSTRAINT "cash_movements_shift_id_fkey" FOREI
 ALTER TABLE "cash_movements" ADD CONSTRAINT "cash_movements_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "sales" ADD CONSTRAINT "sales_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "sales" ADD CONSTRAINT "sales_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "sales" ADD CONSTRAINT "sales_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "warehouses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -560,4 +666,4 @@ ALTER TABLE "payments" ADD CONSTRAINT "payments_sale_id_fkey" FOREIGN KEY ("sale
 ALTER TABLE "sync_metadata" ADD CONSTRAINT "sync_metadata_pos_client_id_fkey" FOREIGN KEY ("pos_client_id") REFERENCES "pos_clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "sync_metadata" ADD CONSTRAINT "sync_metadata_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "sync_metadata" ADD CONSTRAINT "sync_metadata_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

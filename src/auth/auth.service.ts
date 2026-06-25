@@ -19,7 +19,7 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: {
         username: dto.username,
-        storeId: dto.storeId,
+        companyId: dto.companyId,
         isActive: true,
       },
       include: { role: true },
@@ -34,11 +34,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Crea sessione
     await this.prisma.userSession.create({
       data: {
         userId: user.id,
-        token: 'pending', // aggiornato dopo
+        token: 'pending',
         isValid: true,
       },
     });
@@ -47,7 +46,7 @@ export class AuthService {
       sub: user.id,
       username: user.username,
       roleId: user.roleId,
-      storeId: user.storeId,
+      companyId: user.companyId,
       permissions: user.role.permissions as string[],
     };
 
@@ -68,7 +67,7 @@ export class AuthService {
   async getMe(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { role: true, store: true },
+      include: { role: true, company: true },
     });
 
     if (!user) throw new UnauthorizedException();
@@ -79,9 +78,10 @@ export class AuthService {
       fullName: user.fullName,
       role: user.role.name,
       permissions: user.role.permissions,
-      store: user.store.name,
+      company: user.company.name,
     };
   }
+
   async generateMachineToken(hardwareId: string, posClientId: number) {
     const client = await this.prisma.pOSClient.findFirst({
       where: { id: posClientId, hardwareId, isActive: true },
@@ -98,7 +98,7 @@ export class AuthService {
     };
 
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '3650d' }), // 10 anni
+      access_token: this.jwtService.sign(payload, { expiresIn: '3650d' }),
     };
   }
 }

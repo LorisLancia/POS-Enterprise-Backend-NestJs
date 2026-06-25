@@ -7,10 +7,10 @@ import { UpdateProductCategoryDto } from './dto/update-product-category.dto';
 export class ProductCategoriesService {
   constructor(private prisma: PrismaService) {}
 
-  create(storeId: number, dto: CreateProductCategoryDto) {
+  create(companyId: number, dto: CreateProductCategoryDto) {
     return this.prisma.productCategory.create({
       data: {
-        storeId,
+        companyId,
         name: dto.name,
         color: dto.color,
         sortOrder: dto.sortOrder ?? 0,
@@ -18,9 +18,9 @@ export class ProductCategoriesService {
     });
   }
 
-  findAllByStore(storeId: number) {
+  findAllByStore(companyId: number) {
     return this.prisma.productCategory.findMany({
-      where: { storeId, isActive: true },
+      where: { companyId, isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
   }

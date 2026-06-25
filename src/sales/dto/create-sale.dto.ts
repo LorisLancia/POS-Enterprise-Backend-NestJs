@@ -79,7 +79,7 @@ export class CreateSaleDto {
 
   @IsOptional()
   @IsInt()
-  storeId?: number;
+  companyId?: number;
 
   @IsOptional()
   @IsString()

@@ -5,7 +5,7 @@ export interface RequestWithUser extends Request {
     userId: number;
     username: string;
     roleId: number;
-    storeId: number;
+    companyId: number;
     permissions: string[];
   };
 }

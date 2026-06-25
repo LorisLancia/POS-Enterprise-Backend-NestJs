@@ -28,7 +28,7 @@ export class ProductAddonController {
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:create')
   create(@Body() dto: CreateProductAddonDto, @Request() req: RequestWithUser) {
-    return this.service.create(req.user.storeId, dto);
+    return this.service.create(req.user.companyId, dto);
   }
 
   @Get('product/:productId')

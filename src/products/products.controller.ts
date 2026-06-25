@@ -30,20 +30,20 @@ export class ProductsController {
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:create')
   create(@Body() dto: CreateProductDto, @Request() req: RequestWithUser) {
-    return this.productsService.createProduct(req.user.storeId, dto);
+    return this.productsService.createProduct(req.user.companyId, dto);
   }
 
   @Get()
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:read')
   findAll(@Request() req: RequestWithUser) {
-    return this.productsService.findAllByStore(req.user.storeId);
+    return this.productsService.findAllByStore(req.user.companyId);
   }
 
-  @Get('pos/:storeId')
+  @Get('pos/:companyId')
   @Public()
-  getForPOS(@Param('storeId', ParseIntPipe) storeId: number) {
-    return this.productsService.getProductsForPOS(storeId);
+  getForPOS(@Param('companyId', ParseIntPipe) companyId: number) {
+    return this.productsService.getProductsForPOS(companyId);
   }
 
   @Get(':id')
@@ -75,14 +75,14 @@ export class ProductsController {
     @Body() dto: CreateModifierGroupDto,
     @Request() req: RequestWithUser,
   ) {
-    return this.productsService.createModifierGroup(req.user.storeId, dto);
+    return this.productsService.createModifierGroup(req.user.companyId, dto);
   }
 
   @Get('modifier-groups')
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:read')
   findAllModifierGroups(@Request() req: RequestWithUser) {
-    return this.productsService.findAllModifierGroups(req.user.storeId);
+    return this.productsService.findAllModifierGroups(req.user.companyId);
   }
 
   @Post('assign-modifier')

@@ -12,9 +12,9 @@ import { CloseShiftDto } from './dto/close-shift.dto';
 export class SalesService {
   constructor(private prisma: PrismaService) {}
 
-  async createSale(storeId: number, userId: number, dto: CreateSaleDto) {
+  async createSale(companyId: number, userId: number, dto: CreateSaleDto) {
     console.log('>>> createSale called', {
-      storeId,
+      companyId,
       userId,
       posClientId: dto.posClientId,
       shiftId: dto.shiftId,
@@ -65,7 +65,7 @@ export class SalesService {
       console.log('>>> New shift created with ID:', shift.id);
     }
 
-    if (shift.posClient.storeId !== storeId) {
+    if (shift.posClient.companyId !== companyId) {
       throw new BadRequestException('Shift does not belong to this store');
     }
 
@@ -145,8 +145,8 @@ export class SalesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const count = await tx.sale.count({ where: { storeId } });
-      const saleNumber = `S${storeId}-${String(count + 1).padStart(6, '0')}`;
+      const count = await tx.sale.count({ where: { companyId } });
+      const saleNumber = `S${companyId}-${String(count + 1).padStart(6, '0')}`;
 
       console.log(
         '>>> Creating sale with saleNumber:',
@@ -159,7 +159,7 @@ export class SalesService {
 
       const sale = await tx.sale.create({
         data: {
-          storeId,
+          companyId,
           warehouseId: dto.warehouseId,
           posClientId: dto.posClientId,
           shiftId: serverShiftId,
@@ -243,9 +243,9 @@ export class SalesService {
     });
   }
 
-  async findAllByStore(storeId: number) {
+  async findAllByStore(companyId: number) {
     return this.prisma.sale.findMany({
-      where: { storeId },
+      where: { companyId },
       include: {
         items: {
           include: {
@@ -366,9 +366,9 @@ export class SalesService {
     };
   }
 
-  async listShifts(storeId: number) {
+  async listShifts(companyId: number) {
     return this.prisma.shift.findMany({
-      where: { posClient: { storeId } },
+      where: { posClient: { companyId } },
       include: { posClient: true, user: true, sales: true },
       orderBy: { openedAt: 'desc' },
       take: 20,

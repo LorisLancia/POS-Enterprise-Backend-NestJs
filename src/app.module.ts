@@ -9,6 +9,9 @@ import { ProductAddonModule } from './product-addon/product-addon.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { UnitsModule } from './units/units.module';
 import { UnitConversionsModule } from './unit-conversions/unit-conversions.module';
+import { CompaniesModule } from './companies/companies.module';
+import { WarehousesModule } from './warehouses/warehouses.module';
+import { PosClientsModule } from './pos-clients/pos-clients.module';
 
 // ... dentro @Module({ imports: [ ... ] })
 // Aggiungi ProductCategoriesModule alla lista
@@ -25,6 +28,9 @@ import { UnitConversionsModule } from './unit-conversions/unit-conversions.modul
     ProductAddonModule,
     UnitsModule,
     UnitConversionsModule,
+    CompaniesModule,
+    WarehousesModule,
+    PosClientsModule,
   ],
 })
 export class AppModule {}

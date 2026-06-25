@@ -7,77 +7,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== CORE / MULTI-SEDE ====================
+// ==================== COMPANY (Sede) ====================
 model Company {
-  id        Int      @id @default(autoincrement())
-  name      String
-  taxId     String?  @map("tax_id")
-  address   String?
-  phone     String?
-  email     String?
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id         Int      @id @default(autoincrement())
+  name       String
+  legalName  String?  @map("legal_name")
+  taxId      String?  @map("tax_id")
+  vatNumber  String?  @map("vat_number")
+  address    String?
+  postalCode String?  @map("postal_code")
+  city       String?
+  province   String?
+  country    String?  @default("TH")
+  phone      String?
+  email      String?
+  timezone   String   @default("Asia/Bangkok")
+  currency   String   @default("THB")
+  logoUrl    String?  @map("logo_url")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  stores Store[]
+  warehouses        Warehouse[]
+  users             User[]
+  materials         Material[]
+  units             Unit[]
+  unitConversions   UnitConversion[]
+  products          Product[]
+  productCategories ProductCategory[]
+  modifierGroups    ModifierGroup[]
+  suppliers         Supplier[]
+  posClients        POSClient[]
+  sales             Sale[]
+  syncMetadata      SyncMetadata[]
 
   @@map("companies")
 }
 
-model Store {
-  id             Int      @id @default(autoincrement())
-  companyId      Int      @map("company_id")
-  name           String
-  address        String?
-  timezone       String   @default("Asia/Bangkok")
-  currency       String   @default("THB")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  company        Company          @relation(fields: [companyId], references: [id])
-  warehouses     Warehouse[]
-  users          User[]
-  materials      Material[]
-  units Unit[]    // <-- AGGIUNGI QUESTA RIGA
-  unitConversions UnitConversion[]  // <-- AGGIUNGI
-  products       Product[]
-  modifierGroups ModifierGroup[]
-  suppliers      Supplier[]
-  posClients     POSClient[]
-  sales          Sale[]
-  syncMetadata   SyncMetadata[]
-
-  @@map("stores")
-}
-
+// ==================== WAREHOUSE (Magazzino) ====================
 model Warehouse {
   id        Int      @id @default(autoincrement())
-  storeId   Int      @map("store_id")
+  companyId Int      @map("company_id")
   name      String
-  type      String   // 'main', 'bar', 'shisha', 'kitchen'
+  address   String?
+  phone     String?
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
-  store            Store              @relation(fields: [storeId], references: [id])
-  inventory        Inventory[]
-  inventoryTx      InventoryTransaction[]
-  transfersFrom    WarehouseTransfer[] @relation("TransferFrom")
-  transfersTo      WarehouseTransfer[] @relation("TransferTo")
-  purchaseOrders   PurchaseOrder[]
-  sales            Sale[]
+  company        Company                @relation(fields: [companyId], references: [id])
+  inventory      Inventory[]
+  inventoryTx    InventoryTransaction[]
+  transfersFrom  WarehouseTransfer[]    @relation("TransferFrom")
+  transfersTo    WarehouseTransfer[]    @relation("TransferTo")
+  purchaseOrders PurchaseOrder[]
+  sales          Sale[]
+  posClients     POSClient[]
 
   @@map("warehouses")
 }
 
 model WarehouseTransfer {
-  id              Int      @id @default(autoincrement())
-  fromWarehouseId Int      @map("from_warehouse_id")
-  toWarehouseId   Int      @map("to_warehouse_id")
-  status          String   @default("pending") // pending, completed, cancelled
+  id              Int       @id @default(autoincrement())
+  fromWarehouseId Int       @map("from_warehouse_id")
+  toWarehouseId   Int       @map("to_warehouse_id")
+  status          String    @default("pending")
   notes           String?
-  createdBy       Int      @map("created_by")
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdBy       Int       @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
   completedAt     DateTime? @map("completed_at")
 
   fromWarehouse Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
@@ -91,7 +87,7 @@ model WarehouseTransfer {
 model Role {
   id          Int      @id @default(autoincrement())
   name        String   @unique
-  permissions Json     // array di stringhe: ["product:read", "sale:create"]
+  permissions Json
   description String?
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -103,7 +99,7 @@ model Role {
 
 model User {
   id        Int      @id @default(autoincrement())
-  storeId   Int      @map("store_id")
+  companyId Int      @map("company_id")
   roleId    Int      @map("role_id")
   username  String
   pinHash   String   @map("pin_hash")
@@ -114,8 +110,8 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  store            Store           @relation(fields: [storeId], references: [id])
-  role             Role            @relation(fields: [roleId], references: [id])
+  company          Company                @relation(fields: [companyId], references: [id])
+  role             Role                   @relation(fields: [roleId], references: [id])
   sessions         UserSession[]
   sales            Sale[]
   shiftsOpened     Shift[]
@@ -124,65 +120,80 @@ model User {
   cashMovements    CashMovement[]
   createdTransfers WarehouseTransfer[]
 
-  @@unique([storeId, username])
+  @@unique([companyId, username])
   @@map("users")
 }
 
 model UserSession {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  posClientId Int?   @map("pos_client_id")
-  token     String
-  ipAddress String?  @map("ip_address")
-  startedAt DateTime @default(now()) @map("started_at")
-  endedAt   DateTime? @map("ended_at")
-  isValid   Boolean  @default(true) @map("is_valid")
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  posClientId Int?      @map("pos_client_id")
+  token       String
+  ipAddress   String?   @map("ip_address")
+  startedAt   DateTime  @default(now()) @map("started_at")
+  endedAt     DateTime? @map("ended_at")
+  isValid     Boolean   @default(true) @map("is_valid")
 
-  user     User      @relation(fields: [userId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
   posClient POSClient? @relation(fields: [posClientId], references: [id])
 
   @@map("user_sessions")
 }
 
-// ==================== MATERIALI (RAW) ====================
-// AGGIUNGI in schema.prisma
-
+// ==================== UNITÀ DI MISURA ====================
 model Unit {
   id        Int      @id @default(autoincrement())
-  storeId   Int     @map("store_id")    // <-- aggiungi ? (nullable temporaneo)
+  companyId Int      @map("company_id")
   name      String
   symbol    String
   type      String   @default("piece")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
-  store     Store   @relation(fields: [storeId], references: [id])  // <-- ? su Store
-  materials Material[]
-  recipes   ProductRecipe[]
-   fromConversions UnitConversion[] @relation("FromUnit")  // <-- AGGIUNGI
-  toConversions   UnitConversion[] @relation("ToUnit")    // <-- AGGIUNGI
+  company         Company          @relation(fields: [companyId], references: [id])
+  materials       Material[]
+  recipes         ProductRecipe[]
+  fromConversions UnitConversion[] @relation("FromUnit")
+  toConversions   UnitConversion[] @relation("ToUnit")
 
   @@map("units")
 }
 
-// MODIFICA Material
+model UnitConversion {
+  id         Int      @id @default(autoincrement())
+  companyId  Int      @map("company_id")
+  fromUnitId Int      @map("from_unit_id")
+  toUnitId   Int      @map("to_unit_id")
+  factor     Decimal  @db.Decimal(12, 6)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company  Company @relation(fields: [companyId], references: [id])
+  fromUnit Unit    @relation("FromUnit", fields: [fromUnitId], references: [id])
+  toUnit   Unit    @relation("ToUnit", fields: [toUnitId], references: [id])
+
+  @@unique([companyId, fromUnitId, toUnitId])
+  @@map("unit_conversions")
+}
+
+// ==================== MATERIALI ====================
 model Material {
   id          Int      @id @default(autoincrement())
-  storeId     Int      @map("store_id")
+  companyId   Int      @map("company_id")
   name        String
-  unitId      Int      @map("unit_id")        // CHANGED: era unit String
+  unitId      Int      @map("unit_id")
   category    String?
   costPerUnit Decimal  @default(0) @map("cost_per_unit") @db.Decimal(12, 4)
   minStock    Decimal? @map("min_stock") @db.Decimal(12, 4)
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  store       Store    @relation(fields: [storeId], references: [id])
-  unit        Unit     @relation(fields: [unitId], references: [id])
-  recipes     ProductRecipe[]
-  inventory   Inventory[]
-  inventoryTx InventoryTransaction[]
-  poItems     POItem[]
+  company         Company                @relation(fields: [companyId], references: [id])
+  unit            Unit                   @relation(fields: [unitId], references: [id])
+  recipes         ProductRecipe[]
+  inventory       Inventory[]
+  inventoryTx     InventoryTransaction[]
+  poItems         POItem[]
   modifierOptions ModifierOption[]
 
   @@map("materials")
@@ -191,7 +202,7 @@ model Material {
 // ==================== PRODOTTI ====================
 model Product {
   id              Int      @id @default(autoincrement())
-  storeId         Int      @map("store_id")
+  companyId       Int      @map("company_id")
   name            String
   categoryId      Int?     @map("category_id")
   sku             String?
@@ -203,79 +214,79 @@ model Product {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  store           Store             @relation(fields: [storeId], references: [id])
-  category        ProductCategory?  @relation(fields: [categoryId], references: [id])
-  variants        ProductVariant[]
-  recipes         ProductRecipe[]
-  modifiers       ProductModifier[]
-  saleItems       SaleItem[]
-  addons          ProductAddon[]
-  addonItems      ProductAddonItem[]
-  saleItemAddons  SaleItemAddon[]
+  company        Company            @relation(fields: [companyId], references: [id])
+  category       ProductCategory?   @relation(fields: [categoryId], references: [id])
+  variants       ProductVariant[]
+  recipes        ProductRecipe[]
+  modifiers      ProductModifier[]
+  saleItems      SaleItem[]
+  addons         ProductAddon[]
+  addonItems     ProductAddonItem[]
+  saleItemAddons SaleItemAddon[]
 
   @@map("products")
 }
 
 model ProductCategory {
-  id        Int      @id @default(autoincrement())
-  storeId   Int      @map("store_id")
+  id        Int     @id @default(autoincrement())
+  companyId Int     @map("company_id")
   name      String
   color     String?
-  sortOrder Int      @default(0) @map("sort_order")
-  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+  isActive  Boolean @default(true) @map("is_active")
 
+  company  Company   @relation(fields: [companyId], references: [id])
   products Product[]
 
   @@map("product_categories")
 }
 
 model ProductVariant {
-  id              Int      @id @default(autoincrement())
-  productId       Int      @map("product_id")
+  id              Int     @id @default(autoincrement())
+  productId       Int     @map("product_id")
   sku             String?
-  name            String   // es. "Small", "Large"
-  priceAdjustment Decimal  @default(0) @map("price_adjustment") @db.Decimal(12, 2)
-  isActive        Boolean  @default(true) @map("is_active")
+  name            String
+  priceAdjustment Decimal @default(0) @map("price_adjustment") @db.Decimal(12, 2)
+  isActive        Boolean @default(true) @map("is_active")
 
-  product      Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  recipes      ProductRecipe[]
-  saleItems    SaleItem[]
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  recipes   ProductRecipe[]
+  saleItems SaleItem[]
 
   @@map("product_variants")
 }
 
 // ==================== RICETTE / BOM ====================
-// MODIFICA ProductRecipe
 model ProductRecipe {
-  id              Int      @id @default(autoincrement())
-  productId       Int      @map("product_id")
-  variantId       Int?     @map("variant_id")
-  materialId      Int      @map("material_id")
-  quantity        Decimal  @db.Decimal(12, 4)
-  unitId          Int      @map("unit_id")   // CHANGED: era unit String
-  wastagePercent  Decimal  @default(0) @map("wastage_percent") @db.Decimal(5, 2)
+  id             Int     @id @default(autoincrement())
+  productId      Int     @map("product_id")
+  variantId      Int?    @map("variant_id")
+  materialId     Int     @map("material_id")
+  quantity       Decimal @db.Decimal(12, 4)
+  unitId         Int     @map("unit_id")
+  wastagePercent Decimal @default(0) @map("wastage_percent") @db.Decimal(5, 2)
 
-  product   Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant   ProductVariant? @relation(fields: [variantId], references: [id])
-  material  Material      @relation(fields: [materialId], references: [id])
-  unit      Unit          @relation(fields: [unitId], references: [id])
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id])
+  material Material        @relation(fields: [materialId], references: [id])
+  unit     Unit            @relation(fields: [unitId], references: [id])
 
   @@map("product_recipes")
 }
 
-// ==================== MODIFIER & ADDON ====================
+// ==================== MODIFIER ====================
 model ModifierGroup {
-  id             Int      @id @default(autoincrement())
-  storeId        Int      @map("store_id")
-  name           String
-  selectionType  String   @map("selection_type")
-  minSelect      Int      @default(0) @map("min_select")
-  maxSelect      Int      @default(1) @map("max_select")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement())
+  companyId     Int      @map("company_id")
+  name          String
+  selectionType String   @map("selection_type")
+  minSelect     Int      @default(0) @map("min_select")
+  maxSelect     Int      @default(1) @map("max_select")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  store   Store             @relation(fields: [storeId], references: [id])
-  options ModifierOption[]
+  company  Company           @relation(fields: [companyId], references: [id])
+  options  ModifierOption[]
   products ProductModifier[]
 
   @@map("modifier_groups")
@@ -298,11 +309,11 @@ model ModifierOption {
 }
 
 model ProductModifier {
-  id        Int      @id @default(autoincrement())
-  productId Int      @map("product_id")
-  groupId   Int      @map("group_id")
+  id         Int     @id @default(autoincrement())
+  productId  Int     @map("product_id")
+  groupId    Int     @map("group_id")
   isRequired Boolean @default(false) @map("is_required")
-  sortOrder Int      @default(0) @map("sort_order")
+  sortOrder  Int     @default(0) @map("sort_order")
 
   product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
   group   ModifierGroup @relation(fields: [groupId], references: [id])
@@ -321,19 +332,19 @@ model ProductAddon {
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  product Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
   items   ProductAddonItem[]
 
   @@map("product_addons")
 }
 
 model ProductAddonItem {
-  id             Int      @id @default(autoincrement())
-  addonId        Int      @map("addon_id")
-  addonProductId Int      @map("addon_product_id")
-  quantityValue  Decimal  @default(1) @map("quantity_value") @db.Decimal(12, 4)
-  sortOrder      Int      @default(0) @map("sort_order")
-  isActive       Boolean  @default(true) @map("is_active")
+  id             Int     @id @default(autoincrement())
+  addonId        Int     @map("addon_id")
+  addonProductId Int     @map("addon_product_id")
+  quantityValue  Decimal @default(1) @map("quantity_value") @db.Decimal(12, 4)
+  sortOrder      Int     @default(0) @map("sort_order")
+  isActive       Boolean @default(true) @map("is_active")
 
   addon        ProductAddon @relation(fields: [addonId], references: [id], onDelete: Cascade)
   addonProduct Product      @relation(fields: [addonProductId], references: [id], onDelete: Cascade)
@@ -343,13 +354,13 @@ model ProductAddonItem {
 }
 
 model SaleItemAddon {
-  id              Int      @id @default(autoincrement())
-  saleItemId      Int      @map("sale_item_id")
-  addonProductId  Int      @map("addon_product_id")
-  quantity        Decimal  @default(1) @db.Decimal(12, 4)
-  quantityValue   Decimal  @default(1) @map("quantity_value") @db.Decimal(12, 4)
-  unitPrice       Decimal  @map("unit_price") @db.Decimal(12, 2)
-  totalPrice      Decimal  @map("total_price") @db.Decimal(12, 2)
+  id             Int     @id @default(autoincrement())
+  saleItemId     Int     @map("sale_item_id")
+  addonProductId Int     @map("addon_product_id")
+  quantity       Decimal @default(1) @db.Decimal(12, 4)
+  quantityValue  Decimal @default(1) @map("quantity_value") @db.Decimal(12, 4)
+  unitPrice      Decimal @map("unit_price") @db.Decimal(12, 2)
+  totalPrice     Decimal @map("total_price") @db.Decimal(12, 2)
 
   saleItem     SaleItem @relation(fields: [saleItemId], references: [id], onDelete: Cascade)
   addonProduct Product  @relation(fields: [addonProductId], references: [id])
@@ -359,12 +370,12 @@ model SaleItemAddon {
 
 // ==================== INVENTARIO ====================
 model Inventory {
-  id              Int      @id @default(autoincrement())
-  warehouseId     Int      @map("warehouse_id")
-  materialId      Int      @map("material_id")
-  quantity        Decimal  @db.Decimal(12, 4)
-  reservedQuantity Decimal @default(0) @map("reserved_quantity") @db.Decimal(12, 4)
-  lastUpdated     DateTime @updatedAt @map("last_updated")
+  id               Int      @id @default(autoincrement())
+  warehouseId      Int      @map("warehouse_id")
+  materialId       Int      @map("material_id")
+  quantity         Decimal  @db.Decimal(12, 4)
+  reservedQuantity Decimal  @default(0) @map("reserved_quantity") @db.Decimal(12, 4)
+  lastUpdated      DateTime @updatedAt @map("last_updated")
 
   warehouse Warehouse @relation(fields: [warehouseId], references: [id])
   material  Material  @relation(fields: [materialId], references: [id])
@@ -374,17 +385,17 @@ model Inventory {
 }
 
 model InventoryTransaction {
-  id           Int      @id @default(autoincrement())
-  warehouseId  Int      @map("warehouse_id")
-  materialId   Int      @map("material_id")
-  type         String
-  quantity     Decimal  @db.Decimal(12, 4)
-  unitCost     Decimal? @map("unit_cost") @db.Decimal(12, 4)
-  referenceId  Int?     @map("reference_id")
-  referenceType String? @map("reference_type")
-  notes        String?
-  createdBy    Int      @map("created_by")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement())
+  warehouseId   Int      @map("warehouse_id")
+  materialId    Int      @map("material_id")
+  type          String
+  quantity      Decimal  @db.Decimal(12, 4)
+  unitCost      Decimal? @map("unit_cost") @db.Decimal(12, 4)
+  referenceId   Int?     @map("reference_id")
+  referenceType String?  @map("reference_type")
+  notes         String?
+  createdBy     Int      @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   warehouse Warehouse @relation(fields: [warehouseId], references: [id])
   material  Material  @relation(fields: [materialId], references: [id])
@@ -396,7 +407,7 @@ model InventoryTransaction {
 // ==================== ACQUISTI ====================
 model Supplier {
   id        Int      @id @default(autoincrement())
-  storeId   Int      @map("store_id")
+  companyId Int      @map("company_id")
   name      String
   contact   String?
   phone     String?
@@ -405,7 +416,7 @@ model Supplier {
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
-  store        Store           @relation(fields: [storeId], references: [id])
+  company        Company         @relation(fields: [companyId], references: [id])
   purchaseOrders PurchaseOrder[]
 
   @@map("suppliers")
@@ -431,12 +442,12 @@ model PurchaseOrder {
 }
 
 model POItem {
-  id          Int      @id @default(autoincrement())
-  poId        Int      @map("po_id")
-  materialId  Int      @map("material_id")
-  quantity    Decimal  @db.Decimal(12, 4)
-  unitPrice   Decimal  @map("unit_price") @db.Decimal(12, 4)
-  receivedQty Decimal  @default(0) @map("received_qty") @db.Decimal(12, 4)
+  id          Int     @id @default(autoincrement())
+  poId        Int     @map("po_id")
+  materialId  Int     @map("material_id")
+  quantity    Decimal @db.Decimal(12, 4)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 4)
+  receivedQty Decimal @default(0) @map("received_qty") @db.Decimal(12, 4)
 
   po       PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
   material Material      @relation(fields: [materialId], references: [id])
@@ -446,16 +457,18 @@ model POItem {
 
 // ==================== POS CLIENTS ====================
 model POSClient {
-  id          Int      @id @default(autoincrement())
-  storeId     Int      @map("store_id")
+  id          Int       @id @default(autoincrement())
+  companyId   Int       @map("company_id")
+  warehouseId Int       @map("warehouse_id")
   name        String
   location    String?
-  hardwareId  String   @map("hardware_id")
+  hardwareId  String    @map("hardware_id")
   lastSyncAt  DateTime? @map("last_sync_at")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  store     Store          @relation(fields: [storeId], references: [id])
+  company   Company        @relation(fields: [companyId], references: [id])
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id])
   sessions  UserSession[]
   shifts    Shift[]
   sales     Sale[]
@@ -466,20 +479,20 @@ model POSClient {
 
 // ==================== TURNI / CASSA ====================
 model Shift {
-  id            Int      @id @default(autoincrement())
-  posClientId   Int      @map("pos_client_id")
-  userId        Int      @map("user_id")
-  openedAt      DateTime @default(now()) @map("opened_at")
-  closedAt      DateTime? @map("closed_at")
-  startingCash  Decimal  @map("starting_cash") @db.Decimal(12, 2)
-  expectedCash  Decimal? @map("expected_cash") @db.Decimal(12, 2)
-  actualCash    Decimal? @map("actual_cash") @db.Decimal(12, 2)
-  difference    Decimal? @db.Decimal(12, 2)
-  status        String   @default("open")
-  notes         String?
+  id           Int       @id @default(autoincrement())
+  posClientId  Int       @map("pos_client_id")
+  userId       Int       @map("user_id")
+  openedAt     DateTime  @default(now()) @map("opened_at")
+  closedAt     DateTime? @map("closed_at")
+  startingCash Decimal   @map("starting_cash") @db.Decimal(12, 2)
+  expectedCash Decimal?  @map("expected_cash") @db.Decimal(12, 2)
+  actualCash   Decimal?  @map("actual_cash") @db.Decimal(12, 2)
+  difference   Decimal?  @db.Decimal(12, 2)
+  status       String    @default("open")
+  notes        String?
 
-  posClient     POSClient       @relation(fields: [posClientId], references: [id])
-  user          User            @relation(fields: [userId], references: [id])
+  posClient     POSClient      @relation(fields: [posClientId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
   sales         Sale[]
   cashMovements CashMovement[]
 
@@ -503,47 +516,47 @@ model CashMovement {
 
 // ==================== VENDITE ====================
 model Sale {
-  id          Int      @id @default(autoincrement())
-  storeId     Int      @map("store_id")
-  warehouseId Int      @map("warehouse_id")
-  posClientId Int      @map("pos_client_id")
-  clientSaleId String? @map("client_sale_id") @unique
-  shiftId     Int      @map("shift_id")
-  userId      Int      @map("user_id")
-  saleNumber  String   @map("sale_number")
-  subtotal    Decimal  @db.Decimal(12, 2)
-  taxTotal    Decimal  @map("tax_total") @db.Decimal(12, 2)
-  discountTotal Decimal @default(0) @map("discount_total") @db.Decimal(12, 2)
-  total       Decimal  @db.Decimal(12, 2)
-  status      String   @default("completed")
-  customerCount Int?   @map("customer_count")
-  tableNumber String?  @map("table_number")
-  notes       String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  syncedAt    DateTime? @map("synced_at")
+  id            Int       @id @default(autoincrement())
+  companyId     Int       @map("company_id")
+  warehouseId   Int       @map("warehouse_id")
+  posClientId   Int       @map("pos_client_id")
+  clientSaleId  String?   @unique @map("client_sale_id")
+  shiftId       Int       @map("shift_id")
+  userId        Int       @map("user_id")
+  saleNumber    String    @map("sale_number")
+  subtotal      Decimal   @db.Decimal(12, 2)
+  taxTotal      Decimal   @map("tax_total") @db.Decimal(12, 2)
+  discountTotal Decimal   @default(0) @map("discount_total") @db.Decimal(12, 2)
+  total         Decimal   @db.Decimal(12, 2)
+  status        String    @default("completed")
+  customerCount Int?      @map("customer_count")
+  tableNumber   String?   @map("table_number")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  syncedAt      DateTime? @map("synced_at")
 
-  store     Store       @relation(fields: [storeId], references: [id])
-  warehouse Warehouse   @relation(fields: [warehouseId], references: [id])
-  posClient POSClient   @relation(fields: [posClientId], references: [id])
-  shift     Shift       @relation(fields: [shiftId], references: [id])
-  user      User        @relation(fields: [userId], references: [id])
+  company   Company    @relation(fields: [companyId], references: [id])
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id])
+  posClient POSClient  @relation(fields: [posClientId], references: [id])
+  shift     Shift      @relation(fields: [shiftId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
   items     SaleItem[]
   payments  Payment[]
 
-  @@unique([storeId, saleNumber])
+  @@unique([companyId, saleNumber])
   @@map("sales")
 }
 
 model SaleItem {
-  id              Int      @id @default(autoincrement())
-  saleId          Int      @map("sale_id")
-  productId       Int      @map("product_id")
-  variantId       Int?     @map("variant_id")
-  quantity        Decimal  @db.Decimal(12, 4)
-  unitPrice       Decimal  @map("unit_price") @db.Decimal(12, 2)
-  totalPrice      Decimal  @map("total_price") @db.Decimal(12, 2)
-  costAtSale      Decimal? @map("cost_at_sale") @db.Decimal(12, 4)
-  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  id             Int      @id @default(autoincrement())
+  saleId         Int      @map("sale_id")
+  productId      Int      @map("product_id")
+  variantId      Int?     @map("variant_id")
+  quantity       Decimal  @db.Decimal(12, 4)
+  unitPrice      Decimal  @map("unit_price") @db.Decimal(12, 2)
+  totalPrice     Decimal  @map("total_price") @db.Decimal(12, 2)
+  costAtSale     Decimal? @map("cost_at_sale") @db.Decimal(12, 4)
+  discountAmount Decimal  @default(0) @map("discount_amount") @db.Decimal(12, 2)
 
   sale      Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product   Product            @relation(fields: [productId], references: [id])
@@ -555,11 +568,11 @@ model SaleItem {
 }
 
 model SaleItemModifier {
-  id                Int      @id @default(autoincrement())
-  saleItemId        Int      @map("sale_item_id")
-  modifierOptionId  Int      @map("modifier_option_id")
-  quantity          Int      @default(1)
-  priceAdjustment   Decimal  @default(0) @map("price_adjustment") @db.Decimal(12, 2)
+  id               Int     @id @default(autoincrement())
+  saleItemId       Int     @map("sale_item_id")
+  modifierOptionId Int     @map("modifier_option_id")
+  quantity         Int     @default(1)
+  priceAdjustment  Decimal @default(0) @map("price_adjustment") @db.Decimal(12, 2)
 
   saleItem       SaleItem       @relation(fields: [saleItemId], references: [id], onDelete: Cascade)
   modifierOption ModifierOption @relation(fields: [modifierOptionId], references: [id])
@@ -568,13 +581,13 @@ model SaleItemModifier {
 }
 
 model Payment {
-  id          Int      @id @default(autoincrement())
-  saleId      Int      @map("sale_id")
-  method      String
-  amount      Decimal  @db.Decimal(12, 2)
-  reference   String?
-  isRefunded  Boolean  @default(false) @map("is_refunded")
-  refundedAt  DateTime? @map("refunded_at")
+  id         Int       @id @default(autoincrement())
+  saleId     Int       @map("sale_id")
+  method     String
+  amount     Decimal   @db.Decimal(12, 2)
+  reference  String?
+  isRefunded Boolean   @default(false) @map("is_refunded")
+  refundedAt DateTime? @map("refunded_at")
 
   sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
@@ -585,30 +598,14 @@ model Payment {
 model SyncMetadata {
   id          Int      @id @default(autoincrement())
   posClientId Int      @map("pos_client_id")
-  storeId     Int      @map("store_id")
+  companyId   Int      @map("company_id")
   entityType  String   @map("entity_type")
   lastVersion Int      @map("last_version")
   lastSyncAt  DateTime @map("last_sync_at")
 
   posClient POSClient @relation(fields: [posClientId], references: [id])
-  store     Store     @relation(fields: [storeId], references: [id])
+  company   Company   @relation(fields: [companyId], references: [id])
 
   @@unique([posClientId, entityType])
   @@map("sync_metadata")
-}
-model UnitConversion {
-  id         Int      @id @default(autoincrement())
-  storeId    Int      @map("store_id")
-  fromUnitId Int      @map("from_unit_id")
-  toUnitId   Int      @map("to_unit_id")
-  factor     Decimal  @db.Decimal(12, 6) // es. 1 box = 6 btl → factor = 6.000000
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  store    Store @relation(fields: [storeId], references: [id])
-  fromUnit Unit  @relation("FromUnit", fields: [fromUnitId], references: [id])
-  toUnit   Unit  @relation("ToUnit", fields: [toUnitId], references: [id])
-
-  @@unique([storeId, fromUnitId, toUnitId])
-  @@map("unit_conversions")
 }

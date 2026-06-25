@@ -7,11 +7,11 @@ import { UpdateProductAddonDto } from './dto/update-product-addon.dto';
 export class ProductAddonService {
   constructor(private prisma: PrismaService) {}
 
-  async create(storeId: number, dto: CreateProductAddonDto) {
+  async create(companyId: number, dto: CreateProductAddonDto) {
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
     });
-    if (!product || product.storeId !== storeId) {
+    if (!product || product.companyId !== companyId) {
       throw new NotFoundException('Product not found');
     }
 

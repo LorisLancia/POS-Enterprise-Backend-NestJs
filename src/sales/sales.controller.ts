@@ -29,20 +29,20 @@ export class SalesController {
   @RequirePermission('sale:create')
   createSale(@Body() dto: CreateSaleDto, @Request() req: RequestWithUser) {
     const userId = dto.userId ?? req.user.userId;
-    const storeId = req.user?.storeId ?? dto.storeId ?? 1;
+    const companyId = req.user?.companyId ?? dto.companyId ?? 1;
     console.log('>>> Controller createSale:', {
-      storeId,
+      companyId,
       userId,
       reqUser: req.user,
     });
-    return this.salesService.createSale(storeId, userId, dto);
+    return this.salesService.createSale(companyId, userId, dto);
   }
 
   @Get()
   @UseGuards(PermissionsGuard)
   @RequirePermission('sale:read')
   findAll(@Request() req: RequestWithUser) {
-    return this.salesService.findAllByStore(req.user.storeId);
+    return this.salesService.findAllByStore(req.user.companyId);
   }
 
   // === ROUTE STATICHE PRIMA di quelle dinamiche (:id) ===
@@ -71,7 +71,7 @@ export class SalesController {
   @UseGuards(PermissionsGuard)
   @RequirePermission('sale:read')
   listShifts(@Request() req: RequestWithUser) {
-    return this.salesService.listShifts(req.user.storeId);
+    return this.salesService.listShifts(req.user.companyId);
   }
 
   @Post('shifts/:id/close')
@@ -97,8 +97,8 @@ export class SalesController {
   @Public()
   syncOfflineSale(@Body() dto: CreateSaleDto, @Request() req: RequestWithUser) {
     const userId = dto.userId ?? req.user?.userId ?? 1;
-    const storeId = req.user?.storeId ?? dto.storeId ?? 1;
-    return this.salesService.createSale(storeId, userId, dto);
+    const companyId = req.user?.companyId ?? dto.companyId ?? 1;
+    return this.salesService.createSale(companyId, userId, dto);
   }
 
   // =======================================================

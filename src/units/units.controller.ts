@@ -27,14 +27,14 @@ export class UnitsController {
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:create')
   create(@Body() dto: CreateUnitDto, @Request() req: RequestWithUser) {
-    return this.service.create(req.user.storeId, dto);
+    return this.service.create(req.user.companyId, dto);
   }
 
   @Get()
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:read')
   findAll(@Request() req: RequestWithUser) {
-    return this.service.findAllByStore(req.user.storeId);
+    return this.service.findAllByStore(req.user.companyId);
   }
 
   @Get(':id')

@@ -9,11 +9,11 @@ import { AssignModifierDto } from './dto/assign-modifier.dto';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  async createProduct(storeId: number, dto: CreateProductDto) {
+  async createProduct(companyId: number, dto: CreateProductDto) {
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
-          storeId,
+          companyId,
           name: dto.name,
           categoryId: dto.categoryId,
           sku: dto.sku,
@@ -112,9 +112,9 @@ export class ProductsService {
     });
   }
 
-  async findAllByStore(storeId: number) {
+  async findAllByStore(companyId: number) {
     return this.prisma.product.findMany({
-      where: { storeId },
+      where: { companyId },
       include: {
         category: true,
         variants: true,
@@ -191,10 +191,10 @@ export class ProductsService {
   }
 
   // Modifier Groups
-  async createModifierGroup(storeId: number, dto: CreateModifierGroupDto) {
+  async createModifierGroup(companyId: number, dto: CreateModifierGroupDto) {
     return this.prisma.modifierGroup.create({
       data: {
-        storeId,
+        companyId,
         name: dto.name,
         selectionType: dto.selectionType,
         minSelect: dto.minSelect,
@@ -213,9 +213,9 @@ export class ProductsService {
     });
   }
 
-  async findAllModifierGroups(storeId: number) {
+  async findAllModifierGroups(companyId: number) {
     return this.prisma.modifierGroup.findMany({
-      where: { storeId },
+      where: { companyId },
       include: { options: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -232,9 +232,9 @@ export class ProductsService {
   }
 
   // POS Sync Endpoint
-  async getProductsForPOS(storeId: number) {
+  async getProductsForPOS(companyId: number) {
     return this.prisma.product.findMany({
-      where: { storeId, isActive: true },
+      where: { companyId, isActive: true },
       include: {
         category: true,
         variants: { where: { isActive: true } },
