@@ -11,12 +11,21 @@ import {
 } from '@nestjs/common';
 import { PosClientsService } from './pos-clients.service';
 import { CreatePosClientDto, UpdatePosClientDto } from './dto/pos-client.dto';
-import { Public } from '../auth/decorators/public.decorator'; // <-- Assicurati sia così
+import { SetupPosClientDto } from './dto/setup-pos-client.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('pos-clients')
 export class PosClientsController {
   constructor(private readonly service: PosClientsService) {}
 
+  // ===================== SETUP WIZARD (single public endpoint) =====================
+  @Post('setup')
+  @Public()
+  setup(@Body() dto: SetupPosClientDto) {
+    return this.service.setup(dto);
+  }
+
+  // ===================== EXISTING ENDPOINTS (protected) =====================
   @Post()
   create(@Body() dto: CreatePosClientDto) {
     return this.service.create(dto);
@@ -51,13 +60,13 @@ export class PosClientsController {
   }
 
   @Post('register')
-  @Public() // <-- Decoratore corretto
+  @Public()
   registerFromPOS(@Body() dto: CreatePosClientDto) {
     return this.service.create(dto);
   }
 
   @Post('machine-token')
-  @Public() // <-- Decoratore corretto
+  @Public()
   getMachineToken(@Body() dto: { hardwareId: string; posClientId: number }) {
     return this.service.generateMachineToken(dto.hardwareId, dto.posClientId);
   }

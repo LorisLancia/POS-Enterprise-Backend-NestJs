@@ -12,6 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { RequirePermission } from './decorators/require-permission.decorator';
+import { Public } from './decorators/public.decorator';
 import type { RequestWithUser } from '../common/types/request.types';
 
 @Controller('auth')
@@ -38,6 +39,7 @@ export class AuthController {
   }
 
   @Get('health')
+  @Public()
   health() {
     return { status: 'OK', timestamp: new Date().toISOString() };
   }
@@ -48,11 +50,20 @@ export class AuthController {
   adminOnly() {
     return { message: 'You have permission to create users' };
   }
+
   @Post('machine-token')
+  @Public()
   async machineToken(@Body() dto: { hardwareId: string; posClientId: number }) {
     return this.authService.generateMachineToken(
       dto.hardwareId,
       dto.posClientId,
     );
+  }
+
+  // ===================== NUOVO: Admin Companies =====================
+  @Post('admin-companies')
+  @Public()
+  async getAdminCompanies(@Body() dto: { username: string; pin: string }) {
+    return this.authService.getAdminCompanies(dto.username, dto.pin);
   }
 }
