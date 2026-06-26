@@ -52,18 +52,8 @@ export class SeedService {
       },
     });
 
-    await this.prisma.pOSClient.upsert({
-      where: { id: 1 },
-      update: {},
-      create: {
-        id: 1,
-        companyId: company.id,
-        warehouseId: warehouse.id,
-        name: 'POS Main',
-        location: 'Main Counter',
-        hardwareId: 'POS-MAIN-001',
-      },
-    });
+    // ❌ RIMOSSO: il POSClient viene creato dal wizard, non dal seed
+    // await this.prisma.pOSClient.upsert({ ... });
 
     return { message: 'Seed completed', companyId: company.id };
   }

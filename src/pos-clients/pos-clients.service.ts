@@ -19,7 +19,7 @@ export class PosClientsService {
 
   // ===================== SETUP WIZARD (single endpoint) =====================
   async setup(dto: SetupPosClientDto) {
-    // 1. Verify admin credentials (search by username only)
+    // 1. Verify admin credentials
     const users = await this.prisma.user.findMany({
       where: {
         username: dto.adminUsername,
@@ -32,13 +32,11 @@ export class PosClientsService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Find user with matching PIN and ADMIN role
     let adminUser = null;
     for (const u of users) {
       const pinValid = await bcrypt.compare(dto.adminPin, u.pinHash);
       if (!pinValid) continue;
 
-      // Verify admin role BEFORE accepting
       const isAdmin =
         u.role.name === 'admin' ||
         (u.role.permissions as string[])?.includes('*');
@@ -77,13 +75,49 @@ export class PosClientsService {
     const existing = await this.prisma.pOSClient.findFirst({
       where: { hardwareId: dto.hardwareId, companyId: dto.companyId },
     });
+
     if (existing) {
-      throw new ConflictException(
-        'POS Client with this hardwareId already registered',
-      );
+      if (existing.isActive) {
+        throw new ConflictException(
+          'POS Client already active. Please deactivate it first (via Reconfigure from the POS, or from the admin panel).',
+        );
+      }
+
+      // Riattiva il POS disattivato
+      const updated = await this.prisma.pOSClient.update({
+        where: { id: existing.id },
+        data: {
+          name: dto.registerName,
+          location: dto.location,
+          warehouse: { connect: { id: dto.warehouseId } },
+          isActive: true,
+          // ❌ RIMOSSO: updatedAt: new Date(),  <-- Prisma non lo ha nel modello
+        },
+        include: { company: true, warehouse: true }, // ✅ AGGIUNTO
+      });
+
+      const payload = {
+        sub: updated.id,
+        type: 'machine',
+        hardwareId: dto.hardwareId,
+      };
+      const machineToken = this.jwtService.sign(payload, {
+        expiresIn: '3650d',
+      });
+
+      return {
+        posClientId: updated.id,
+        machineToken,
+        companyId: updated.companyId,
+        companyName: updated.company.name,
+        warehouseId: updated.warehouseId,
+        warehouseName: updated.warehouse.name,
+        registerName: updated.name,
+        hardwareId: updated.hardwareId,
+      };
     }
 
-    // 5. Create POS client
+    // 5. Create new POS client
     const posClient = await this.prisma.pOSClient.create({
       data: {
         name: dto.registerName,
@@ -115,7 +149,7 @@ export class PosClientsService {
     };
   }
 
-  // ===================== EXISTING METHODS (unchanged) =====================
+  // ===================== EXISTING METHODS =====================
   async create(dto: CreatePosClientDto) {
     const hardwareId = dto.hardwareId || `TEMP-${Date.now()}`;
 
@@ -141,8 +175,9 @@ export class PosClientsService {
 
   async findAll(companyId: number) {
     return this.prisma.pOSClient.findMany({
-      where: { companyId, isActive: true },
+      where: { companyId },
       include: { company: true, warehouse: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -185,6 +220,15 @@ export class PosClientsService {
     return this.prisma.pOSClient.update({
       where: { id },
       data: { isActive: false },
+    });
+  }
+
+  async reactivate(id: number) {
+    await this.findOne(id);
+    return this.prisma.pOSClient.update({
+      where: { id },
+      data: { isActive: true },
+      include: { company: true, warehouse: true },
     });
   }
 
