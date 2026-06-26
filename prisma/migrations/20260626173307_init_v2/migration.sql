@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "standard_units" AS ENUM ('ml', 'l', 'g', 'kg', 'pc', 'pk');
+
 -- CreateTable
 CREATE TABLE "companies" (
     "id" SERIAL NOT NULL,
@@ -93,44 +96,32 @@ CREATE TABLE "user_sessions" (
 );
 
 -- CreateTable
-CREATE TABLE "units" (
-    "id" SERIAL NOT NULL,
-    "company_id" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
-    "symbol" TEXT NOT NULL,
-    "type" TEXT NOT NULL DEFAULT 'piece',
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "units_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "unit_conversions" (
-    "id" SERIAL NOT NULL,
-    "company_id" INTEGER NOT NULL,
-    "from_unit_id" INTEGER NOT NULL,
-    "to_unit_id" INTEGER NOT NULL,
-    "factor" DECIMAL(12,6) NOT NULL,
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "unit_conversions_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "materials" (
     "id" SERIAL NOT NULL,
     "company_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
-    "unit_id" INTEGER NOT NULL,
+    "description" TEXT,
     "category" TEXT,
-    "cost_per_unit" DECIMAL(12,4) NOT NULL DEFAULT 0,
     "min_stock" DECIMAL(12,4),
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "materials_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "material_units" (
+    "id" SERIAL NOT NULL,
+    "material_id" INTEGER NOT NULL,
+    "unit" "standard_units" NOT NULL,
+    "quantity" DECIMAL(12,4) NOT NULL,
+    "is_default" BOOLEAN NOT NULL DEFAULT false,
+    "is_purchase_unit" BOOLEAN NOT NULL DEFAULT false,
+    "is_sale_unit" BOOLEAN NOT NULL DEFAULT false,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "material_units_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -182,7 +173,7 @@ CREATE TABLE "product_recipes" (
     "variant_id" INTEGER,
     "material_id" INTEGER NOT NULL,
     "quantity" DECIMAL(12,4) NOT NULL,
-    "unit_id" INTEGER NOT NULL,
+    "unit" "standard_units" NOT NULL,
     "wastage_percent" DECIMAL(5,2) NOT NULL DEFAULT 0,
 
     CONSTRAINT "product_recipes_pkey" PRIMARY KEY ("id")
@@ -210,6 +201,7 @@ CREATE TABLE "modifier_options" (
     "price_adjustment" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "material_id" INTEGER,
     "quantity_consumed" DECIMAL(12,4),
+    "unit" "standard_units",
     "is_active" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "modifier_options_pkey" PRIMARY KEY ("id")
@@ -269,6 +261,7 @@ CREATE TABLE "inventory" (
     "id" SERIAL NOT NULL,
     "warehouse_id" INTEGER NOT NULL,
     "material_id" INTEGER NOT NULL,
+    "unit" "standard_units" NOT NULL,
     "quantity" DECIMAL(12,4) NOT NULL,
     "reserved_quantity" DECIMAL(12,4) NOT NULL DEFAULT 0,
     "last_updated" TIMESTAMP(3) NOT NULL,
@@ -282,6 +275,7 @@ CREATE TABLE "inventory_transactions" (
     "warehouse_id" INTEGER NOT NULL,
     "material_id" INTEGER NOT NULL,
     "type" TEXT NOT NULL,
+    "unit" "standard_units" NOT NULL,
     "quantity" DECIMAL(12,4) NOT NULL,
     "unit_cost" DECIMAL(12,4),
     "reference_id" INTEGER,
@@ -328,6 +322,7 @@ CREATE TABLE "po_items" (
     "id" SERIAL NOT NULL,
     "po_id" INTEGER NOT NULL,
     "material_id" INTEGER NOT NULL,
+    "unit" "standard_units" NOT NULL,
     "quantity" DECIMAL(12,4) NOT NULL,
     "unit_price" DECIMAL(12,4) NOT NULL,
     "received_qty" DECIMAL(12,4) NOT NULL DEFAULT 0,
@@ -346,6 +341,7 @@ CREATE TABLE "pos_clients" (
     "last_sync_at" TIMESTAMP(3),
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "pos_clients_pkey" PRIMARY KEY ("id")
 );
@@ -462,7 +458,7 @@ CREATE UNIQUE INDEX "roles_name_key" ON "roles"("name");
 CREATE UNIQUE INDEX "users_company_id_username_key" ON "users"("company_id", "username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "unit_conversions_company_id_from_unit_id_to_unit_id_key" ON "unit_conversions"("company_id", "from_unit_id", "to_unit_id");
+CREATE UNIQUE INDEX "material_units_material_id_unit_key" ON "material_units"("material_id", "unit");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "product_modifiers_product_id_group_id_key" ON "product_modifiers"("product_id", "group_id");
@@ -471,7 +467,7 @@ CREATE UNIQUE INDEX "product_modifiers_product_id_group_id_key" ON "product_modi
 CREATE UNIQUE INDEX "product_addon_items_addon_id_addon_product_id_key" ON "product_addon_items"("addon_id", "addon_product_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "inventory_warehouse_id_material_id_key" ON "inventory"("warehouse_id", "material_id");
+CREATE UNIQUE INDEX "inventory_warehouse_id_material_id_unit_key" ON "inventory"("warehouse_id", "material_id", "unit");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "sales_client_sale_id_key" ON "sales"("client_sale_id");
@@ -507,22 +503,10 @@ ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_user_id_fkey" FOREIGN 
 ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_pos_client_id_fkey" FOREIGN KEY ("pos_client_id") REFERENCES "pos_clients"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "units" ADD CONSTRAINT "units_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "unit_conversions" ADD CONSTRAINT "unit_conversions_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "unit_conversions" ADD CONSTRAINT "unit_conversions_from_unit_id_fkey" FOREIGN KEY ("from_unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "unit_conversions" ADD CONSTRAINT "unit_conversions_to_unit_id_fkey" FOREIGN KEY ("to_unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "materials" ADD CONSTRAINT "materials_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "materials" ADD CONSTRAINT "materials_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "material_units" ADD CONSTRAINT "material_units_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "materials"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "products" ADD CONSTRAINT "products_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -544,9 +528,6 @@ ALTER TABLE "product_recipes" ADD CONSTRAINT "product_recipes_variant_id_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "product_recipes" ADD CONSTRAINT "product_recipes_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "materials"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "product_recipes" ADD CONSTRAINT "product_recipes_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "modifier_groups" ADD CONSTRAINT "modifier_groups_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

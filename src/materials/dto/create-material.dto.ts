@@ -1,22 +1,56 @@
-// src/materials/dto/create-material.dto.ts
-import { IsString, IsOptional, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { StandardUnit } from '@prisma/client';
+
+class MaterialUnitDto {
+  @IsString()
+  unit: StandardUnit;
+
+  @IsString()
+  quantity: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isDefault?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isPurchaseUnit?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isSaleUnit?: boolean;
+}
 
 export class CreateMaterialDto {
   @IsString()
   name: string;
 
-  @IsNumber()
-  unitId: number; // <-- CHANGED: era unit string
-
-  @IsOptional()
   @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
   category?: string;
 
+  @IsString()
   @IsOptional()
-  @IsNumber()
-  costPerUnit?: number;
+  minStock?: string;
 
+  @IsBoolean()
   @IsOptional()
-  @IsNumber()
-  minStock?: number;
+  isActive?: boolean;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MaterialUnitDto)
+  units: MaterialUnitDto[];
 }

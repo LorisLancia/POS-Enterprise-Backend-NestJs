@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsBoolean } from 'class-validator';
+import { IsInt, IsBoolean, IsOptional } from 'class-validator';
 
 export class AssignModifierDto {
   @IsInt()
@@ -7,7 +7,7 @@ export class AssignModifierDto {
   @IsInt()
   groupId: number;
 
-  @IsOptional()
   @IsBoolean()
+  @IsOptional()
   isRequired?: boolean;
 }

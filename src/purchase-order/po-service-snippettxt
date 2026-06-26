@@ -1,0 +1,16 @@
+
+  // Nel metodo createPurchaseOrder o addItem, usa:
+  // unit: StandardUnit invece di unitId: number
+
+  async addItem(poId: number, dto: CreatePOItemDto) {
+    return this.prisma.pOItem.create({
+      data: {
+        poId,
+        materialId: dto.materialId,
+        unit: dto.unit,
+        quantity: BigInt(dto.quantity),
+        unitPrice: BigInt(dto.unitPrice),
+      },
+      include: { material: { include: { units: true } } },
+    });
+  }

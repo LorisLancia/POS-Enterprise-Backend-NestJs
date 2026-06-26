@@ -17,8 +17,8 @@ export class ProductsService {
           name: dto.name,
           categoryId: dto.categoryId,
           sku: dto.sku,
-          basePrice: dto.basePrice,
-          taxRate: dto.taxRate,
+          basePrice: parseFloat(dto.basePrice),
+          taxRate: dto.taxRate ? parseFloat(dto.taxRate) : 0,
           trackInventory: dto.trackInventory ?? true,
           allowDecimalQty: dto.allowDecimalQty ?? false,
           variants: {
@@ -26,17 +26,20 @@ export class ProductsService {
               dto.variants?.map((v) => ({
                 name: v.name,
                 sku: v.sku,
-                priceAdjustment: v.priceAdjustment,
+                priceAdjustment: v.priceAdjustment
+                  ? parseFloat(v.priceAdjustment)
+                  : 0,
               })) || [],
           },
           recipes: {
             create:
               dto.recipes?.map((r) => ({
                 materialId: r.materialId,
-                variantId: r.variantId,
-                quantity: r.quantity,
-                unitId: r.unitId,
-                wastagePercent: r.wastagePercent ?? 0,
+                quantity: parseFloat(r.quantity),
+                unit: r.unit,
+                wastagePercent: r.wastagePercent
+                  ? parseFloat(r.wastagePercent)
+                  : 0,
               })) || [],
           },
           addons: {
@@ -47,17 +50,11 @@ export class ProductsService {
                 sortOrder: a.sortOrder ?? 0,
                 items: {
                   create:
-                    a.items?.map(
-                      (item: {
-                        addonProductId: number;
-                        quantityValue?: number;
-                        sortOrder?: number;
-                      }) => ({
-                        addonProductId: item.addonProductId,
-                        quantityValue: item.quantityValue ?? 1,
-                        sortOrder: item.sortOrder ?? 0,
-                      }),
-                    ) || [],
+                    a.items?.map((item) => ({
+                      addonProductId: item.addonProductId,
+                      quantityValue: item.quantityValue ?? 1,
+                      sortOrder: item.sortOrder ?? 0,
+                    })) || [],
                 },
               })) || [],
           },
@@ -65,13 +62,7 @@ export class ProductsService {
         include: {
           category: true,
           variants: true,
-          recipes: {
-            include: {
-              material: true,
-              variant: true, // AGGIUNGI
-              unit: true, // AGGIUNGI
-            },
-          },
+          recipes: { include: { material: { include: { units: true } } } },
           modifiers: { include: { group: { include: { options: true } } } },
           addons: {
             include: {
@@ -98,7 +89,7 @@ export class ProductsService {
         include: {
           category: true,
           variants: true,
-          recipes: { include: { material: true, variant: true, unit: true } },
+          recipes: { include: { material: { include: { units: true } } } },
           modifiers: { include: { group: { include: { options: true } } } },
           addons: {
             include: {
@@ -118,7 +109,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: true,
-        recipes: { include: { material: true, variant: true, unit: true } },
+        recipes: { include: { material: { include: { units: true } } } },
         modifiers: { include: { group: { include: { options: true } } } },
         addons: {
           where: { isActive: true },
@@ -142,7 +133,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: true,
-        recipes: { include: { material: true, variant: true, unit: true } },
+        recipes: { include: { material: { include: { units: true } } } },
         modifiers: { include: { group: { include: { options: true } } } },
         addons: {
           where: { isActive: true },
@@ -168,8 +159,8 @@ export class ProductsService {
         name: dto.name,
         categoryId: dto.categoryId,
         sku: dto.sku,
-        basePrice: dto.basePrice,
-        taxRate: dto.taxRate,
+        basePrice: dto.basePrice ? parseFloat(dto.basePrice) : undefined,
+        taxRate: dto.taxRate ? parseFloat(dto.taxRate) : undefined,
         trackInventory: dto.trackInventory,
         allowDecimalQty: dto.allowDecimalQty,
         isActive: dto.isActive,
@@ -177,7 +168,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: true,
-        recipes: { include: { material: true, unit: true } },
+        recipes: { include: { material: { include: { units: true } } } },
         modifiers: { include: { group: { include: { options: true } } } },
       },
     });
@@ -238,7 +229,7 @@ export class ProductsService {
       include: {
         category: true,
         variants: { where: { isActive: true } },
-        recipes: { include: { material: true, variant: true, unit: true } },
+        recipes: { include: { material: { include: { units: true } } } },
         modifiers: {
           include: {
             group: {

@@ -1,28 +1,27 @@
 import {
   IsString,
   IsOptional,
-  IsNumber,
   IsInt,
   IsArray,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class CreateModifierOptionDto {
+class ModifierOptionDto {
   @IsString()
   name: string;
 
+  @IsString()
   @IsOptional()
-  @IsNumber()
-  priceAdjustment?: number;
+  priceAdjustment?: string;
 
-  @IsOptional()
   @IsInt()
+  @IsOptional()
   materialId?: number;
 
+  @IsString()
   @IsOptional()
-  @IsNumber()
-  quantityConsumed?: number;
+  quantityConsumed?: string;
 }
 
 export class CreateModifierGroupDto {
@@ -30,7 +29,7 @@ export class CreateModifierGroupDto {
   name: string;
 
   @IsString()
-  selectionType: string; // 'single' or 'multiple'
+  selectionType: string;
 
   @IsInt()
   minSelect: number;
@@ -38,9 +37,9 @@ export class CreateModifierGroupDto {
   @IsInt()
   maxSelect: number;
 
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateModifierOptionDto)
-  options?: CreateModifierOptionDto[];
+  @Type(() => ModifierOptionDto)
+  @IsOptional()
+  options?: ModifierOptionDto[];
 }

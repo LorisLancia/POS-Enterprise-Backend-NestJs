@@ -79,7 +79,10 @@ export class SalesService {
     for (const item of dto.items) {
       const product = await this.prisma.product.findUnique({
         where: { id: item.productId },
-        include: { variants: true, recipes: true },
+        include: {
+          variants: true,
+          recipes: { include: { material: { include: { units: true } } } },
+        },
       });
       if (!product || !product.isActive) {
         throw new NotFoundException(`Product ${item.productId} not found`);
@@ -91,12 +94,12 @@ export class SalesService {
 
       const unitPrice =
         item.unitPrice ??
-        product.basePrice.toNumber() +
-          (variant?.priceAdjustment?.toNumber() ?? 0);
+        (product.basePrice as unknown as number) +
+          ((variant?.priceAdjustment as unknown as number) ?? 0);
       const itemTotal = unitPrice * item.quantity;
       const itemDiscount = item.discountAmount ?? 0;
       const itemSubtotal = itemTotal - itemDiscount;
-      const taxRate = product.taxRate.toNumber() / 100;
+      const taxRate = (product.taxRate as unknown as number) / 100;
       const itemTax = itemSubtotal * taxRate;
 
       subtotal += itemSubtotal;
@@ -112,7 +115,7 @@ export class SalesService {
           });
           if (!option || !option.isActive) continue;
           const modPrice =
-            option.priceAdjustment.toNumber() * (mod.quantity ?? 1);
+            (option.priceAdjustment as unknown as number) * (mod.quantity ?? 1);
           modifiersTotal += modPrice;
           modifiersData.push({
             modifierOptionId: mod.modifierOptionId,
@@ -200,13 +203,15 @@ export class SalesService {
       for (const item of dto.items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
-          include: { recipes: { include: { material: true } } },
+          include: {
+            recipes: { include: { material: { include: { units: true } } } },
+          },
         });
         if (!product?.trackInventory) continue;
 
         for (const recipe of product.recipes) {
-          const qty = recipe.quantity.toNumber() * item.quantity;
-          const wastage = recipe.wastagePercent?.toNumber() ?? 0;
+          const qty = (recipe.quantity as unknown as number) * item.quantity;
+          const wastage = (recipe.wastagePercent as unknown as number) ?? 0;
           const totalQty = qty + (qty * wastage) / 100;
 
           await tx.inventoryTransaction.create({
@@ -214,6 +219,7 @@ export class SalesService {
               warehouseId: dto.warehouseId,
               materialId: recipe.materialId,
               type: 'sale',
+              unit: recipe.unit,
               quantity: totalQty,
               referenceId: sale.id,
               referenceType: 'sale',
@@ -223,15 +229,17 @@ export class SalesService {
 
           await tx.inventory.upsert({
             where: {
-              warehouseId_materialId: {
+              warehouseId_materialId_unit: {
                 warehouseId: dto.warehouseId,
                 materialId: recipe.materialId,
+                unit: recipe.unit,
               },
             },
             update: { quantity: { decrement: totalQty } },
             create: {
               warehouseId: dto.warehouseId,
               materialId: recipe.materialId,
+              unit: recipe.unit,
               quantity: -totalQty,
             },
           });
@@ -310,9 +318,9 @@ export class SalesService {
     const cashSales = shift.sales
       .flatMap((s) => s.payments)
       .filter((p) => p.method === 'cash')
-      .reduce((sum, p) => sum + p.amount.toNumber(), 0);
+      .reduce((sum, p) => sum + (p.amount as unknown as number), 0);
 
-    const expectedCash = shift.startingCash.toNumber() + cashSales;
+    const expectedCash = (shift.startingCash as unknown as number) + cashSales;
 
     return this.prisma.shift.update({
       where: { id: shiftId },
@@ -343,17 +351,17 @@ export class SalesService {
     if (!shift) throw new NotFoundException('Shift not found');
 
     const totalSales = shift.sales.reduce(
-      (sum, s) => sum + s.total.toNumber(),
+      (sum, s) => sum + (s.total as unknown as number),
       0,
     );
     const totalCash = shift.sales
       .flatMap((s) => s.payments)
       .filter((p) => p.method === 'cash')
-      .reduce((sum, p) => sum + p.amount.toNumber(), 0);
+      .reduce((sum, p) => sum + (p.amount as unknown as number), 0);
     const totalCard = shift.sales
       .flatMap((s) => s.payments)
       .filter((p) => p.method === 'card')
-      .reduce((sum, p) => sum + p.amount.toNumber(), 0);
+      .reduce((sum, p) => sum + (p.amount as unknown as number), 0);
 
     return {
       shift,
