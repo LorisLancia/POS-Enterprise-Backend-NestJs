@@ -16,6 +16,11 @@ export class UpdateProductAddonItemDto {
   @IsNumber()
   quantityValue?: number;
 
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  price?: number;
+
   @IsOptional()
   @IsNumber()
   sortOrder?: number;
@@ -33,11 +38,6 @@ export class UpdateProductAddonDto {
   @IsOptional()
   @IsNumber()
   sortOrder?: number;
-
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsOptional()
-  @Type(() => Number)
-  price?: number;
 
   @IsOptional()
   @IsBoolean()

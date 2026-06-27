@@ -88,7 +88,7 @@ export class ProductAddonService {
               addonId: id,
               addonProductId: item.addonProductId,
               quantityValue: item.quantityValue ?? 1,
-              price: dto.price ?? 0,
+              price: item.price ?? 0,
               sortOrder: item.sortOrder ?? 0,
             })),
           });
