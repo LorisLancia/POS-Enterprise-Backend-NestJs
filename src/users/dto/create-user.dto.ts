@@ -1,35 +1,30 @@
 import {
   IsString,
-  IsOptional,
   IsNumber,
+  IsOptional,
   IsBoolean,
-  IsEnum,
+  MinLength,
 } from 'class-validator';
-
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  MANAGER = 'MANAGER',
-  CASHIER = 'CASHIER',
-}
 
 export class CreateUserDto {
   @IsString()
+  @MinLength(3)
   username: string;
 
   @IsString()
+  @MinLength(4)
   password: string;
 
   @IsString()
   fullName: string;
 
-  @IsEnum(UserRole)
-  role: UserRole;
+  @IsNumber()
+  roleId: number;
+
+  @IsNumber()
+  companyId: number;
 
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @IsOptional()
-  @IsNumber()
-  companyId?: number;
 }

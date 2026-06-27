@@ -11,6 +11,7 @@ import { CompaniesModule } from './companies/companies.module';
 import { WarehousesModule } from './warehouses/warehouses.module';
 import { PosClientsModule } from './pos-clients/pos-clients.module';
 import { ModifierGroupsModule } from './modifier-groups/modifier-groups.module';
+import { RolesModule } from './roles/roles.module';
 
 // ... dentro @Module({ imports: [ ... ] })
 // Aggiungi ProductCategoriesModule alla lista
@@ -29,6 +30,7 @@ import { ModifierGroupsModule } from './modifier-groups/modifier-groups.module';
     WarehousesModule,
     PosClientsModule,
     ModifierGroupsModule,
+    RolesModule,
   ],
 })
 export class AppModule {}

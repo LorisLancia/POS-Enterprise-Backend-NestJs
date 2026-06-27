@@ -25,13 +25,16 @@ export class UsersService {
         id: true,
         name: true,
         description: true,
+        permissions: true,
       },
     },
   };
 
-  async findAll() {
+  async findAll(companyId?: number) {
     return this.prisma.user.findMany({
+      where: companyId ? { companyId } : undefined,
       select: this.userSelect,
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -40,31 +43,20 @@ export class UsersService {
       where: { id },
       select: this.userSelect,
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user || !user.isActive) throw new NotFoundException('User not found');
     return user;
   }
 
-  private async getRoleIdByName(roleName: string): Promise<number> {
-    const role = await this.prisma.role.findUnique({
-      where: { name: roleName },
-    });
-    if (!role) throw new NotFoundException(`Role ${roleName} not found`);
-    return role.id;
-  }
-
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({
+    const existing = await this.prisma.user.findFirst({
       where: {
-        companyId_username: {
-          companyId: dto.companyId || 1,
-          username: dto.username,
-        },
+        companyId: dto.companyId,
+        username: dto.username,
       },
     });
     if (existing)
-      throw new ConflictException('Username already exists in this store');
+      throw new ConflictException('Username already exists in this company');
 
-    const roleId = await this.getRoleIdByName(dto.role);
     const pinHash = await bcrypt.hash(dto.password, 10);
 
     return this.prisma.user.create({
@@ -72,8 +64,8 @@ export class UsersService {
         username: dto.username,
         pinHash,
         fullName: dto.fullName,
-        roleId,
-        companyId: dto.companyId || 1,
+        roleId: dto.roleId,
+        companyId: dto.companyId,
         isActive: dto.isActive ?? true,
       },
       select: this.userSelect,
@@ -83,15 +75,11 @@ export class UsersService {
   async update(id: number, dto: UpdateUserDto) {
     await this.findOne(id);
 
-    const data: any = {
-      fullName: dto.fullName,
-      isActive: dto.isActive,
-      companyId: dto.companyId,
-    };
-
-    if (dto.role) {
-      data.roleId = await this.getRoleIdByName(dto.role);
-    }
+    const data: any = {};
+    if (dto.fullName !== undefined) data.fullName = dto.fullName;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.companyId !== undefined) data.companyId = dto.companyId;
+    if (dto.roleId !== undefined) data.roleId = dto.roleId;
 
     if (dto.password) {
       data.pinHash = await bcrypt.hash(dto.password, 10);
@@ -106,6 +94,9 @@ export class UsersService {
 
   async remove(id: number) {
     await this.findOne(id);
-    return this.prisma.user.delete({ where: { id } });
+    return this.prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 }
