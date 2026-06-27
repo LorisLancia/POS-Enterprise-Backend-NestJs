@@ -10,19 +10,6 @@ import {
 import { Type } from 'class-transformer';
 import { StandardUnit } from '@prisma/client';
 
-class ProductVariantDto {
-  @IsString()
-  @IsOptional()
-  sku?: string;
-
-  @IsString()
-  name: string;
-
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsOptional()
-  priceAdjustment?: number;
-}
-
 class ProductRecipeDto {
   @IsInt()
   materialId: number;
@@ -38,6 +25,29 @@ class ProductRecipeDto {
   wastagePercent?: number;
 }
 
+class ProductVariantDto {
+  @IsInt()
+  @IsOptional()
+  id?: number; // ← per l'upsert in edit
+
+  @IsString()
+  @IsOptional()
+  sku?: string;
+
+  @IsString()
+  name: string;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  priceAdjustment?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductRecipeDto)
+  @IsOptional()
+  recipes?: ProductRecipeDto[];
+}
+
 class ProductAddonItemDto {
   @IsInt()
   addonProductId: number;
@@ -45,6 +55,11 @@ class ProductAddonItemDto {
   @IsNumber({ maxDecimalPlaces: 4 })
   @IsOptional()
   quantityValue?: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 }) // ← AGGIUNGI
+  @IsOptional()
+  @Type(() => Number)
+  price?: number;
 
   @IsInt()
   @IsOptional()
@@ -116,12 +131,6 @@ export class UpdateProductDto {
   @Type(() => ProductVariantDto)
   @IsOptional()
   variants?: ProductVariantDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductRecipeDto)
-  @IsOptional()
-  recipes?: ProductRecipeDto[];
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -10,19 +10,6 @@ import {
 import { Type } from 'class-transformer';
 import { StandardUnit } from '@prisma/client';
 
-class ProductVariantDto {
-  @IsString()
-  @IsOptional()
-  sku?: string;
-
-  @IsString()
-  name: string;
-
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsOptional()
-  priceAdjustment?: number;
-}
-
 class ProductRecipeDto {
   @IsInt()
   materialId: number;
@@ -36,6 +23,25 @@ class ProductRecipeDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
   wastagePercent?: number;
+}
+
+class ProductVariantDto {
+  @IsString()
+  @IsOptional()
+  sku?: string;
+
+  @IsString()
+  name: string;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  priceAdjustment?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductRecipeDto)
+  @IsOptional()
+  recipes?: ProductRecipeDto[];
 }
 
 class ProductAddonItemDto {
@@ -119,12 +125,6 @@ export class CreateProductDto {
   @Type(() => ProductVariantDto)
   @IsOptional()
   variants?: ProductVariantDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductRecipeDto)
-  @IsOptional()
-  recipes?: ProductRecipeDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
