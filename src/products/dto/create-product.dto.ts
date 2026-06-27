@@ -5,6 +5,7 @@ import {
   IsInt,
   IsArray,
   ValidateNested,
+  IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { StandardUnit } from '@prisma/client';
@@ -17,33 +18,33 @@ class ProductVariantDto {
   @IsString()
   name: string;
 
-  @IsString()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
-  priceAdjustment?: string;
+  priceAdjustment?: number;
 }
 
 class ProductRecipeDto {
   @IsInt()
   materialId: number;
 
-  @IsString()
-  quantity: string;
+  @IsNumber({ maxDecimalPlaces: 4 })
+  quantity: number;
 
   @IsString()
   unit: StandardUnit;
 
-  @IsString()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
-  wastagePercent?: string;
+  wastagePercent?: number;
 }
 
 class ProductAddonItemDto {
   @IsInt()
   addonProductId: number;
 
-  @IsString()
+  @IsNumber({ maxDecimalPlaces: 4 })
   @IsOptional()
-  quantityValue?: string;
+  quantityValue?: number;
 
   @IsInt()
   @IsOptional()
@@ -81,12 +82,12 @@ export class CreateProductDto {
   @IsOptional()
   categoryId?: number;
 
-  @IsString()
-  basePrice: string;
+  @IsNumber({ maxDecimalPlaces: 2 })
+  basePrice: number;
 
-  @IsString()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
-  taxRate?: string;
+  taxRate?: number;
 
   @IsBoolean()
   @IsOptional()

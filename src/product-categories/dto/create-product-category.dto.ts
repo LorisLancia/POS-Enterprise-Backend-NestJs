@@ -1,4 +1,3 @@
-// src/product-categories/dto/create-product-category.dto.ts
 import { IsOptional, IsString, IsNumber } from 'class-validator';
 
 export class CreateProductCategoryDto {
@@ -12,4 +11,8 @@ export class CreateProductCategoryDto {
   @IsOptional()
   @IsNumber()
   sortOrder?: number;
+
+  @IsOptional()
+  @IsNumber()
+  parentId?: number;
 }

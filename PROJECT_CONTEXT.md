@@ -1,22 +1,39 @@
 POS Enterprise - Project Context
-File di contesto condiviso per mantenere la continuità tra sessioni di lavoro. Aggiorna la sezione "Ultimo aggiornamento" ogni volta che modifichi qualcosa.
+File di contesto condiviso per mantenere la continuita' tra sessioni di lavoro. Aggiorna la sezione "Ultimo aggiornamento" ogni volta che modifichi qualcosa.
 Ultimo aggiornamento: 2026-06-27
-Cosa è stato fatto oggi (2026-06-27)
-Frontend - Material & Products
+Cosa e' stato fatto oggi (2026-06-27)
+Categorie Gerarchiche (COMPLETATO)
+Schema Prisma: aggiunto parentId a ProductCategory con relazione ricorsiva (parent/children)
+Migration: npx prisma migrate dev --name add_category_parent
+Backend DTO: CreateProductCategoryDto / UpdateProductCategoryDto con parentId?: number
+Backend Service: ProductCategoriesService con:
+buildTree() — ritorna albero gerarchico (solo root + children annidati)
+Validazione anti-ciclo in update() (non puoi essere tuo proprio discendente)
+softDeleteRecursive() — disattiva categoria + tutti i figli
+Frontend Model: ProductCategory con parentId, children, parent
+Frontend Component: ProductCategoriesComponent con:
+Form con dropdown "Parent Category" indentato (visualizza gerarchia)
+Tabella con indentazione visuale (depth * 24px), icone 📁/📄, color dot
+getFlatCategories() per il dropdown (esclude se stessa e discendenti)
+Frontend Routes: aggiornato path da features/categories a features/product-categories
+Frontend Service: ProductCategoriesService usa ProductCategory da product.model.ts
+Prodotti — Fix DTO + Service (COMPLETATO)
+Backend DTO: CreateProductDto / UpdateProductDto — campi numerici (basePrice, taxRate, quantity, wastagePercent, priceAdjustment, quantityValue) da string a number con @IsNumber({ maxDecimalPlaces: X })
+Backend Service: ProductsService — rimossi tutti i parseFloat(), i campi sono gia' number
+Frontend: dropdown Category nel form prodotto usa getFlatCategories() con indentazione gerarchica
+Material — Fix completati (2026-06-27)
 Material model: allineato campo minStock (prima minStockLevel) al backend Prisma
-Materials component: tipi espliciti su tutti i signal(), DTO CreateMaterialDto locale per matchare class-validator backend (minStock: string, quantity: string, senza isActive sulle unità)
+Materials component: tipi espliciti su tutti i signal(), DTO CreateMaterialDto locale per matchare class-validator backend (minStock: string, quantity: string, senza isActive sulle unita')
 Products component: tipi espliciti su tutti i signal(), RecipeUnit esplicito al posto di inferenza TypeScript never
 Fix build Angular: tutti i signal<T>() tipizzati per evitare never[] in strict mode
-Backend - Auth & Material
+Auth & Seed (2026-06-27)
 main.ts: JwtAuthGuard globale con Reflector per supportare @Public()
 AuthController: @Public() aggiunto a setup e login (prima mancavano, bloccavano con 401)
 MaterialsService: fix minStock ternary (dto.minStock !== undefined invece di truthy check per evitare minStock="0" -> null)
 seed.service.ts: aggiunto resetSequences() che resetta tutte le sequenze autoincrement PostgreSQL a MAX(id) + 1
 AuthController: endpoint POST /auth/reset-sequences per reset manuale
 prisma/seed.ts: rimossi tutti gli ID espliciti su Material, MaterialUnit, Product, ProductRecipe. Usa findFirst + create/update invece di upsert con ID fissi. Chiama resetSequences() alla fine.
-Fix sequenze autoincrement (P2002)
-Problema: Prisma creava record con id esplicito nel seed, ma la sequenza PostgreSQL restava a 1. Quando l'app creava nuovi materiali, Prisma tentava id=1 -> conflitto Unique constraint failed on id.
-Soluzione: seed senza ID espliciti + resetSequences() post-seed.
+Fix sequenze autoincrement (P2002): Prisma creava record con id esplicito nel seed, ma la sequenza PostgreSQL restava a 1. Quando l'app creava nuovi materiali, Prisma tentava id=1 -> conflitto Unique constraint failed on id.
 Wizard POS Client Setup — FIX completati (2026-06-26)
 Reconfigure dal POS Client ora chiama self-deactivate sul server (se online) prima di cancellare la config locale
 Backend setup() riattiva POS disattivato invece di bloccare con "already registered"
@@ -43,7 +60,7 @@ POS Client C# WPF .NET MVVM, SQLite locale per offline
 Comunicazione REST API + WebSocket REST per bulk sync; WebSocket per real-time
 Auth JWT + Passport PIN-based per utenti POS; Machine token (10 anni) per POS Client
 Pattern frontend (Angular)
-REGOLA FERMA: Tutta la reattività UI usa Angular Signals (signal(), computed()). MAI usare proprietà plain o \*ngIf per stato che deve aggiornare la UI. Usare sempre @if / @for (control flow) nei template.
+REGOLA FERMA: Tutta la reattivita' UI usa Angular Signals (signal(), computed()). MAI usare proprieta' plain o *ngIf per stato che deve aggiornare la UI. Usare sempre @if / @for (control flow) nei template.
 REGOLA FERMA: Tutti i signal([]) devono avere tipo esplicito: signal<Material[]>([]) invece di signal([]) per evitare never[] in TypeScript strict mode.
 Struttura Frontend (models / services)
 Tutte le interfacce sono centralizzate in core/models/:
@@ -58,7 +75,7 @@ unit.model.ts -> Unit
 unit-conversion.model.ts -> UnitConversion
 product.model.ts -> Product, ProductVariant, ProductRecipe, ModifierGroup, ModifierOption, ProductModifier, ProductAddon, ProductAddonItem, ProductCategory
 product-addon.model.ts -> CreateProductAddonDto, UpdateProductAddonDto, ProductAddonItemDto
-Database - Stato entità
+Database - Stato entita'
 Table
 Entita' Stato Note
 Company ✅ Multi-sede base. Campi anagrafici completi per scontrini/fatture
@@ -68,8 +85,8 @@ Role / User / UserSession ✅ RBAC con permissions JSON. companyId al posto di s
 Unit ✅ Unita' di misura referenziate (piece, volume, weight, container)
 UnitConversion ✅ Conversioni tra unita'
 Material ✅ FK su Unit (unitId), categorie gestite via input. Multi-unita' con MaterialUnit. minStock (Decimal)
-Product ✅ basePrice, taxRate, trackInventory, allowDecimalQty
-ProductCategory ✅ Con colore e sortOrder
+Product ✅ basePrice, taxRate, trackInventory, allowDecimalQty. DTO numeri (non stringhe) 2026-06-27
+ProductCategory ✅ Gerarchico con parentId/children 2026-06-27
 ProductVariant ✅ Small, Large, priceAdjustment
 ProductRecipe ✅ BOM con FK su Unit (unitId), variantId opzionale
 ModifierGroup ✅ selectionType: single/multiple, min/max select
@@ -87,7 +104,9 @@ Store ❌ ELIMINATA Sostituita da Company direttamente
 Schema Prisma completo (attuale)
 Vedere prisma/schema.prisma nel repository.
 Modifiche recenti (2026-06-27):
+ProductCategory: aggiunto parentId con relazione ricorsiva (parent/children)
 Material: multi-unita' con MaterialUnit (tabella ponte). minStock come Decimal.
+Product DTO: campi numerici (basePrice, taxRate, quantity, etc.) invece di stringhe
 Seed: rimossi ID espliciti, aggiunto resetSequences()
 Backend: JwtAuthGuard globale, @Public() su login/setup
 Modifiche recenti (2026-06-26):
@@ -109,8 +128,18 @@ src/
 │ ├── pos-clients.module.ts
 │ └── dto/
 ├── products/
+│ ├── products.service.ts # Fix parseFloat rimossi (2026-06-27)
+│ ├── products.controller.ts
+│ └── dto/
+│ ├── create-product.dto.ts # Numeri invece di stringhe (2026-06-27)
+│ └── update-product.dto.ts # DTO esplicito, no mapped-types (2026-06-27)
 ├── product-addon/
 ├── product-categories/
+│ ├── product-categories.service.ts # Albero gerarchico + anti-ciclo (2026-06-27)
+│ ├── product-categories.controller.ts
+│ └── dto/
+│ ├── create-product-category.dto.ts # + parentId (2026-06-27)
+│ └── update-product-category.dto.ts # + parentId (2026-06-27)
 ├── units/
 ├── unit-conversions/
 ├── materials/
@@ -163,17 +192,24 @@ POST /materials — crea materiale con unita' multiple (inventory:create)
 GET /materials/:id — dettaglio materiale
 PATCH /materials/:id — aggiorna materiale (inventory:update)
 DELETE /materials/:id — soft delete materiale (inventory:delete)
+Product Category (Gerarchico)
+GET /product-categories — lista categorie albero per company (product:read)
+POST /product-categories — crea categoria con parentId (product:create)
+GET /product-categories/:id — dettaglio categoria (con children e parent)
+PATCH /product-categories/:id — aggiorna categoria (anti-ciclo) (product:update)
+DELETE /product-categories/:id — soft delete ricorsivo categoria + figli (product:delete)
+Product
+GET /products — lista prodotti per company
+POST /products — crea prodotto con varianti, ricette, addon, modifierGroupIds
+GET /products/:id — dettaglio prodotto
+PATCH /products/:id — aggiorna prodotto
+DELETE /products/:id — soft delete prodotto
 Product Addon
 POST /product-addons — crea addon group
 GET /product-addons/product/:productId — lista addon di un prodotto
 GET /product-addons/:id — dettaglio addon
 PATCH /product-addons/:id — aggiorna addon
 DELETE /product-addons/:id — soft delete addon
-Product Categories
-GET /product-categories — lista per company
-POST /product-categories — crea categoria
-PATCH /product-categories/:id — aggiorna categoria
-DELETE /product-categories/:id — soft delete categoria
 Units
 GET /units — lista unita' per company
 POST /units — crea unita'
@@ -221,17 +257,18 @@ ProductAddonService e ProductAddonController con CRUD completo
 UnitsService e UnitsController con CRUD completo
 UnitConversionsService e UnitConversionsController con CRUD completo
 ProductCategoriesService e ProductCategoriesController con CRUD completo
+ProductCategory gerarchico con parentId/children (2026-06-27)
 ProductsService aggiornato per gestire addon inline nel create/update product
 ProductsService aggiornato per includere unit nelle ricette
 MaterialsService aggiornato per includere unit nei materiali
 getProductsForPOS aggiornato per includere addon e unit nella risposta sync
 Frontend: ProductAddonManagerComponent con Signals
 Frontend: ProductAddonService per chiamare API addon
-Frontend: Pagina /categories con CRUD completo
+Frontend: Pagina /categories con CRUD completo e albero gerarchico (2026-06-27)
 Frontend: Pagina /materials con CRUD completo (dropdown Unit, multi-unita', minStock)
 Frontend: Pagina /units con CRUD completo
 Frontend: Pagina /unit-conversions con CRUD completo
-Frontend: Form prodotto completo in creazione
+Frontend: Form prodotto completo in creazione con dropdown categorie gerarchico (2026-06-27)
 Frontend: Allineamento modello Product (price -> basePrice, category -> categoryId)
 Frontend: Tutti i modelli spostati in core/models/
 Frontend: Tutti i service puliti e allineati ai modelli
@@ -257,8 +294,10 @@ Backend: @Public() su login/setup in AuthController (2026-06-27)
 Backend: MaterialsService fix minStock ternary (2026-06-27)
 Backend: seed.service.ts + resetSequences() (2026-06-27)
 Backend: prisma/seed.ts senza ID espliciti + resetSequences() (2026-06-27)
+Backend: Product DTO numeri invece di stringhe (2026-06-27)
 Frontend: Material model allineato a minStock (2026-06-27)
 Frontend: Products/Materials component con tipi espliciti signal (2026-06-27)
+Frontend: Categorie gerarchiche con albero visuale (2026-06-27)
 Cosa manca / Roadmap 🚧
 Fase 1: Refactor architettura (IN CORSO)
 ✅ Schema Prisma: eliminata Store, arricchita Company, aggiornate FK
@@ -266,6 +305,8 @@ Fase 1: Refactor architettura (IN CORSO)
 ✅ Frontend: CompanyComponent, WarehouseComponent, PosClientComponent
 ✅ POSClient.updatedAt aggiunto (2026-06-26)
 ✅ Material multi-unita' con MaterialUnit (2026-06-27)
+✅ ProductCategory gerarchico con parentId/children (2026-06-27)
+✅ Product DTO numeri (2026-06-27)
 ☐ Migration Prisma: npx prisma migrate dev --name refactor_remove_store (se non ancora fatto)
 ☐ Aggiornare tutti i service esistenti che usano storeId -> companyId
 ☐ Aggiornare auth/guard per usare companyId invece di storeId
@@ -300,6 +341,8 @@ Fase 5: UI/UX Polish
 ☐ Tema coerente su tutte le pagine
 ☐ Toast notifications per successo/errore
 ☐ Loading skeletons
+☐ Form prodotto: edit con varianti/ricette/modifier esistenti
+☐ Visualizzazione prodotti per categoria nel POS touch
 Decisioni architetturali prese
 Company = Sede fisica: Ogni sede (Phuket, Bangkok, Chiang Mai) e' una Company con dati anagrafici completi per scontrini e fatture.
 No Store intermedia: Eliminata la tabella Store. Company gestisce direttamente warehouses, users, products, etc.
@@ -317,6 +360,7 @@ Coerenza inventario: 1 materiale = 1 unita' base. Le ricette consumano materiali
 Wizard Setup POS: approccio endpoint unico (POST /pos-clients/setup) per semplicita' e sicurezza. Admin PIN verificato lato server, machine token generato automaticamente.
 Reconfigure: il POS si disattiva da solo sul server (self-deactivate) usando il proprio machine token, poi cancella la config locale e riparte il wizard. Se il server e' offline, procede comunque con il cleanup locale.
 Material multi-unita': MaterialUnit tabella ponte con unit (enum), quantity, isDefault, isPurchaseUnit, isSaleUnit. Permette di definire "1 Piece = 1", "750 ML = 1 bottiglia", "6 Pack = 1 confezione" per lo stesso materiale.
+Categorie gerarchiche: ProductCategory con parentId e relazione ricorsiva. Il backend ritorna albero gerarchico, il frontend visualizza con indentazione. Il form prodotto usa dropdown indentato per selezionare la categoria foglia.
 Note per il debugging
 Il backend gira su http://localhost:3000
 Il frontend admin su http://localhost:4200

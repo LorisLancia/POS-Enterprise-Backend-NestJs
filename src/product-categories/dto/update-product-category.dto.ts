@@ -1,4 +1,3 @@
-// src/product-categories/dto/update-product-category.dto.ts
 import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
 
 export class UpdateProductCategoryDto {
@@ -13,6 +12,10 @@ export class UpdateProductCategoryDto {
   @IsOptional()
   @IsNumber()
   sortOrder?: number;
+
+  @IsOptional()
+  @IsNumber()
+  parentId?: number;
 
   @IsOptional()
   @IsBoolean()

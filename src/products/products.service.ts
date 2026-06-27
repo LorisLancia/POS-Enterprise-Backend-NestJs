@@ -17,8 +17,8 @@ export class ProductsService {
           name: dto.name,
           categoryId: dto.categoryId,
           sku: dto.sku,
-          basePrice: parseFloat(dto.basePrice),
-          taxRate: dto.taxRate ? parseFloat(dto.taxRate) : 0,
+          basePrice: dto.basePrice,
+          taxRate: dto.taxRate ?? 0,
           trackInventory: dto.trackInventory ?? true,
           allowDecimalQty: dto.allowDecimalQty ?? false,
           variants: {
@@ -26,20 +26,16 @@ export class ProductsService {
               dto.variants?.map((v) => ({
                 name: v.name,
                 sku: v.sku,
-                priceAdjustment: v.priceAdjustment
-                  ? parseFloat(v.priceAdjustment)
-                  : 0,
+                priceAdjustment: v.priceAdjustment ?? 0,
               })) || [],
           },
           recipes: {
             create:
               dto.recipes?.map((r) => ({
                 materialId: r.materialId,
-                quantity: parseFloat(r.quantity),
+                quantity: r.quantity,
                 unit: r.unit,
-                wastagePercent: r.wastagePercent
-                  ? parseFloat(r.wastagePercent)
-                  : 0,
+                wastagePercent: r.wastagePercent ?? 0,
               })) || [],
           },
           addons: {
@@ -159,8 +155,8 @@ export class ProductsService {
         name: dto.name,
         categoryId: dto.categoryId,
         sku: dto.sku,
-        basePrice: dto.basePrice ? parseFloat(dto.basePrice) : undefined,
-        taxRate: dto.taxRate ? parseFloat(dto.taxRate) : undefined,
+        basePrice: dto.basePrice,
+        taxRate: dto.taxRate,
         trackInventory: dto.trackInventory,
         allowDecimalQty: dto.allowDecimalQty,
         isActive: dto.isActive,
