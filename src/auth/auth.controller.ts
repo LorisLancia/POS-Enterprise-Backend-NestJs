@@ -23,11 +23,13 @@ export class AuthController {
   ) {}
 
   @Post('setup')
+  @Public()
   async setup() {
     return this.seedService.seed();
   }
 
   @Post('login')
+  @Public()
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -65,5 +67,13 @@ export class AuthController {
   @Public()
   async getAdminCompanies(@Body() dto: { username: string; pin: string }) {
     return this.authService.getAdminCompanies(dto.username, dto.pin);
+  }
+
+  // ===================== NUOVO: Reset Sequences =====================
+  @Post('reset-sequences')
+  @Public()
+  async resetSequences() {
+    await this.seedService.resetSequences();
+    return { message: 'Sequences reset successfully' };
   }
 }

@@ -74,7 +74,7 @@ export class MaterialsService {
         name: dto.name,
         description: dto.description,
         category: dto.category,
-        minStock: dto.minStock ? parseFloat(dto.minStock) : undefined,
+        minStock: dto.minStock !== undefined ? parseFloat(dto.minStock) : null,
         isActive: dto.isActive,
         ...unitsUpdate,
       },

@@ -55,6 +55,56 @@ export class SeedService {
     // ❌ RIMOSSO: il POSClient viene creato dal wizard, non dal seed
     // await this.prisma.pOSClient.upsert({ ... });
 
+    // Resetta tutte le sequenze autoincrement per evitare conflitti P2002
+    await this.resetSequences();
+
     return { message: 'Seed completed', companyId: company.id };
+  }
+
+  async resetSequences() {
+    const tables = [
+      'companies',
+      'warehouses',
+      'roles',
+      'users',
+      'user_sessions',
+      'materials',
+      'material_units',
+      'products',
+      'product_categories',
+      'product_variants',
+      'product_recipes',
+      'modifier_groups',
+      'modifier_options',
+      'product_modifiers',
+      'product_addons',
+      'product_addon_items',
+      'sale_item_addons',
+      'inventory',
+      'inventory_transactions',
+      'suppliers',
+      'purchase_orders',
+      'po_items',
+      'pos_clients',
+      'shifts',
+      'cash_movements',
+      'sales',
+      'sale_items',
+      'sale_item_modifiers',
+      'payments',
+      'sync_metadata',
+      'warehouse_transfers',
+    ];
+
+    for (const table of tables) {
+      const seqName = `${table}_id_seq`;
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `SELECT setval('"${seqName}"', COALESCE((SELECT MAX(id) FROM "${table}"), 0) + 1, false);`,
+        );
+      } catch (e) {
+        // Se la sequenza non esiste (tabella vuota o non autoincrement), ignora
+      }
+    }
   }
 }
