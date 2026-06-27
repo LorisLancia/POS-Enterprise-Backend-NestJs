@@ -13,8 +13,6 @@ import {
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { CreateModifierGroupDto } from './dto/create-modifier-group.dto';
-import { AssignModifierDto } from './dto/assign-modifier.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
@@ -40,12 +38,6 @@ export class ProductsController {
     return this.productsService.findAllByStore(req.user.companyId);
   }
 
-  @Get('pos/:companyId')
-  @Public()
-  getForPOS(@Param('companyId', ParseIntPipe) companyId: number) {
-    return this.productsService.getProductsForPOS(companyId);
-  }
-
   @Get(':id')
   @UseGuards(PermissionsGuard)
   @RequirePermission('product:read')
@@ -67,28 +59,9 @@ export class ProductsController {
     return this.productsService.remove(id);
   }
 
-  // Modifier Groups
-  @Post('modifier-groups')
-  @UseGuards(PermissionsGuard)
-  @RequirePermission('product:create')
-  createModifierGroup(
-    @Body() dto: CreateModifierGroupDto,
-    @Request() req: RequestWithUser,
-  ) {
-    return this.productsService.createModifierGroup(req.user.companyId, dto);
-  }
-
-  @Get('modifier-groups')
-  @UseGuards(PermissionsGuard)
-  @RequirePermission('product:read')
-  findAllModifierGroups(@Request() req: RequestWithUser) {
-    return this.productsService.findAllModifierGroups(req.user.companyId);
-  }
-
-  @Post('assign-modifier')
-  @UseGuards(PermissionsGuard)
-  @RequirePermission('product:update')
-  assignModifier(@Body() dto: AssignModifierDto) {
-    return this.productsService.assignModifierToProduct(dto);
+  @Get('pos/:companyId')
+  @Public()
+  getForPOS(@Param('companyId', ParseIntPipe) companyId: number) {
+    return this.productsService.getProductsForPOS(companyId);
   }
 }

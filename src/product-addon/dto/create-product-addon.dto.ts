@@ -15,6 +15,11 @@ export class CreateProductAddonItemDto {
   @IsNumber()
   quantityValue?: number;
 
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  price?: number;
+
   @IsOptional()
   @IsNumber()
   sortOrder?: number;

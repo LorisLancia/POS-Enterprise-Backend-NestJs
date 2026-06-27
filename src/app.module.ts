@@ -10,6 +10,7 @@ import { ProductCategoriesModule } from './product-categories/product-categories
 import { CompaniesModule } from './companies/companies.module';
 import { WarehousesModule } from './warehouses/warehouses.module';
 import { PosClientsModule } from './pos-clients/pos-clients.module';
+import { ModifierGroupsModule } from './modifier-groups/modifier-groups.module';
 
 // ... dentro @Module({ imports: [ ... ] })
 // Aggiungi ProductCategoriesModule alla lista
@@ -27,6 +28,7 @@ import { PosClientsModule } from './pos-clients/pos-clients.module';
     CompaniesModule,
     WarehousesModule,
     PosClientsModule,
+    ModifierGroupsModule,
   ],
 })
 export class AppModule {}

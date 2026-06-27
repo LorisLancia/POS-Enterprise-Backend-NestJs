@@ -49,6 +49,11 @@ class ProductAddonItemDto {
   @IsInt()
   @IsOptional()
   sortOrder?: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  price?: number;
 }
 
 class ProductAddonDto {

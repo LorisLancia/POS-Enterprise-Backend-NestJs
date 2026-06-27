@@ -2,8 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { CreateModifierGroupDto } from './dto/create-modifier-group.dto';
-import { AssignModifierDto } from './dto/assign-modifier.dto';
 
 @Injectable()
 export class ProductsService {
@@ -49,6 +47,7 @@ export class ProductsService {
                     a.items?.map((item) => ({
                       addonProductId: item.addonProductId,
                       quantityValue: item.quantityValue ?? 1,
+                      price: item.price ?? 0,
                       sortOrder: item.sortOrder ?? 0,
                     })) || [],
                 },
@@ -177,47 +176,6 @@ export class ProductsService {
     });
   }
 
-  // Modifier Groups
-  async createModifierGroup(companyId: number, dto: CreateModifierGroupDto) {
-    return this.prisma.modifierGroup.create({
-      data: {
-        companyId,
-        name: dto.name,
-        selectionType: dto.selectionType,
-        minSelect: dto.minSelect,
-        maxSelect: dto.maxSelect,
-        options: {
-          create:
-            dto.options?.map((o) => ({
-              name: o.name,
-              priceAdjustment: o.priceAdjustment ?? 0,
-              materialId: o.materialId,
-              quantityConsumed: o.quantityConsumed,
-            })) || [],
-        },
-      },
-      include: { options: true },
-    });
-  }
-
-  async findAllModifierGroups(companyId: number) {
-    return this.prisma.modifierGroup.findMany({
-      where: { companyId },
-      include: { options: true },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async assignModifierToProduct(dto: AssignModifierDto) {
-    return this.prisma.productModifier.create({
-      data: {
-        productId: dto.productId,
-        groupId: dto.groupId,
-        isRequired: dto.isRequired ?? false,
-      },
-    });
-  }
-
   // POS Sync Endpoint
   async getProductsForPOS(companyId: number) {
     return this.prisma.product.findMany({
@@ -230,7 +188,10 @@ export class ProductsService {
           include: {
             group: {
               include: {
-                options: { where: { isActive: true } },
+                options: {
+                  where: { isActive: true },
+                  include: { material: true }, // ← AGGIUNGI QUESTA RIGA
+                },
               },
             },
           },

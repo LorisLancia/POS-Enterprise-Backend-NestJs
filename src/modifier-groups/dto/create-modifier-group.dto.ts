@@ -4,24 +4,41 @@ import {
   IsInt,
   IsArray,
   ValidateNested,
+  IsNumber,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+enum StandardUnit {
+  ML = 'ML',
+  L = 'L',
+  G = 'G',
+  KG = 'KG',
+  PC = 'PC',
+  PK = 'PK',
+}
 
 class ModifierOptionDto {
   @IsString()
   name: string;
 
-  @IsString()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
-  priceAdjustment?: string;
+  @Type(() => Number)
+  priceAdjustment?: number;
 
   @IsInt()
   @IsOptional()
   materialId?: number;
 
-  @IsString()
+  @IsNumber({ maxDecimalPlaces: 4 })
   @IsOptional()
-  quantityConsumed?: string;
+  @Type(() => Number)
+  quantityConsumed?: number;
+
+  @IsEnum(StandardUnit)
+  @IsOptional()
+  unit?: StandardUnit;
 }
 
 export class CreateModifierGroupDto {

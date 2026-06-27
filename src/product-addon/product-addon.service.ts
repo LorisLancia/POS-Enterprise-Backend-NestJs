@@ -25,6 +25,7 @@ export class ProductAddonService {
           create: dto.items.map((item) => ({
             addonProductId: item.addonProductId,
             quantityValue: item.quantityValue ?? 1,
+            price: item.price ?? 0,
             sortOrder: item.sortOrder ?? 0,
           })),
         },
@@ -87,6 +88,7 @@ export class ProductAddonService {
               addonId: id,
               addonProductId: item.addonProductId,
               quantityValue: item.quantityValue ?? 1,
+              price: dto.price ?? 0,
               sortOrder: item.sortOrder ?? 0,
             })),
           });
