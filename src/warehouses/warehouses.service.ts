@@ -35,10 +35,20 @@ export class WarehousesService {
 
   async update(id: number, dto: UpdateWarehouseDto) {
     await this.findOne(id);
+
+    const {
+      company,
+      posClients,
+      inventory,
+      createdAt,
+      updatedAt,
+      id: _,
+      ...cleanData
+    } = dto as any;
+
     return this.prisma.warehouse.update({
       where: { id },
-      data: dto,
-      include: { company: true },
+      data: cleanData,
     });
   }
 

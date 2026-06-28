@@ -34,7 +34,21 @@ export class CompaniesService {
 
   async update(id: number, dto: UpdateCompanyDto) {
     await this.findOne(id);
-    return this.prisma.company.update({ where: { id }, data: dto });
+
+    // Rimuovi campi relazione e read-only che non devono essere aggiornati
+    const {
+      warehouses,
+      posClients,
+      createdAt,
+      updatedAt,
+      id: _,
+      ...cleanData
+    } = dto as any;
+
+    return this.prisma.company.update({
+      where: { id },
+      data: cleanData,
+    });
   }
 
   async remove(id: number) {
