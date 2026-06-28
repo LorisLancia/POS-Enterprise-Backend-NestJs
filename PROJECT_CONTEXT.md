@@ -2,7 +2,7 @@ POS Enterprise - Project Context
 File di contesto condiviso per mantenere la continuita' tra sessioni di lavoro. Aggiorna la sezione "Ultimo aggiornamento" ogni volta che modifichi qualcosa.
 Ultimo aggiornamento: 2026-06-28
 Cosa e' stato fatto oggi (2026-06-28)
-UI/UX — Design System unificato, Toggle "Show inactive", Confirm Dialog, Fix Reactivate
+UI/UX — Design System unificato, Toggle "Show inactive", Confirm Dialog, Fix Reactivate, Product Form Refactor
 Design System SCSS coerente su CompanyComponent, WarehouseComponent, PosClientComponent
 Variabili condivise (colori, shadow, radius, transition), card-list grid, form-card, filter-bar
 Badge active/inactive, btn-primary/btn-secondary/btn-icon, empty-state
@@ -21,6 +21,19 @@ Reactivate fix: Company/Warehouse inviano solo { isActive: true } invece di spre
 Backend: CompaniesService.update() e WarehousesService.update() filtrano campi relazioni
 Rimosso warehouses, posClients, company, inventory, createdAt, updatedAt, id dal DTO Prisma
 POS Client usa endpoint dedicato PATCH /pos-clients/:id/reactivate (gia' esistente)
+Product Categories: Design System SCSS coerente, tabella gerarchica con tree-icon, color-dot
+Filter-bar con toggle "Show inactive" (come Company/Warehouse/POS Client)
+ConfirmDialog per delete, Toast notifications
+Products Component: Refactor completo form e tabella
+formData da plain object -> signal() con updateFormData() helper
+Selettore categorie a cascata dinamico (N livelli): selectedCategoryPath signal + categoryLevels computed
+getCategoryHierarchy() mostra percorso completo "Parent -> Sub -> Sub" in tabella
+findCategoryById() ricorsivo per cercare in tutto l'albero gerarchico
+buildCategoryPath() ricostruisce path dalla foglia alla radice per edit form
+Field wrapper con label per ogni input (Variants, Recipes, Addon Groups, Addon Items)
+Sezioni in card distinte con bordo, btn-icon-danger per remove, btn-small dashed per add
+Tabella con badge status, category-path, actions orizzontali
+ConfirmDialog + Toast per delete, loading state con spinner
 Company card: layout page-header con titolo + bottone New
 UI/UX — Toast Notifications, Menu Laterale, Ruoli, Collegamento Ruoli-Utenti
 ToastService custom standalone (zero dipendenze esterne) con signal()
@@ -113,6 +126,7 @@ Pattern frontend (Angular)
 REGOLA FERMA: Tutta la reattivita' UI usa Angular Signals (signal(), computed()). MAI usare proprieta' plain o *ngIf per stato che deve aggiornare la UI. Usare sempre @if / @for (control flow) nei template.
 REGOLA FERMA: Tutti i signal([]) devono avere tipo esplicito: signal<Type[]>([]) invece di signal([]) per evitare never[] in TypeScript strict mode.
 REGOLA FERMA: ngModel su signal NON usa [(ngModel)]. Usare [ngModel]="signal()" + (ngModelChange)="signal.set($event)".
+REGOLA FERMA: Selettore categorie gerarchiche usa selectedCategoryPath: number[] signal + categoryLevels computed per N livelli dinamici.
 Struttura Frontend (models / services)
 Tutte le interfacce sono centralizzate in core/models/:
 company.model.ts -> Company, CreateCompanyRequest, UpdateCompanyRequest
@@ -437,6 +451,10 @@ Backend: CompaniesService.update() filtra campi relazioni (warehouses, posClient
 Backend: WarehousesService.update() filtra campi relazioni (company, posClients, inventory, createdAt, updatedAt) (2026-06-28)
 Frontend: Reactivate Company/Warehouse invia solo { isActive: true } (2026-06-28)
 Frontend: Reactivate POS Client usa endpoint dedicato PATCH /pos-clients/:id/reactivate (2026-06-28)
+Frontend: Product Categories Design System SCSS, tabella gerarchica, toggle inactive, ConfirmDialog (2026-06-28)
+Frontend: Products Component refactor — formData signal, selettore categorie cascata dinamico N livelli (2026-06-28)
+Frontend: Products field wrapper con label, card sections, btn-icon-danger, btn-small dashed (2026-06-28)
+Frontend: Products getCategoryHierarchy() percorso completo, findCategoryById() ricorsivo (2026-06-28)
 Cosa manca / Roadmap 🚧
 Fase 1: Refactor architettura (IN CORSO)
 ✅ Schema Prisma: eliminata Store, arricchita Company, aggiornate FK
@@ -534,4 +552,4 @@ Come usare questo file nelle nuove chat
 Quando riapri una nuova sessione, fornisci questo link:
 https://raw.githubusercontent.com/LorisLancia/POS-Enterprise-Backend-NestJs/main/PROJECT_CONTEXT.md
 E digita: "Leggi il PROJECT_CONTEXT.md e aggiorniamo."
-Generato il 2026-06-28. Modifica e agg
+Generato il 2026-06-28. Modifica e aggiorna liberamente.
