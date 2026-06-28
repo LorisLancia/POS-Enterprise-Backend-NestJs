@@ -2,7 +2,7 @@ POS Enterprise - Project Context
 File di contesto condiviso per mantenere la continuita' tra sessioni di lavoro. Aggiorna la sezione "Ultimo aggiornamento" ogni volta che modifichi qualcosa.
 Ultimo aggiornamento: 2026-06-28
 Cosa e' stato fatto oggi (2026-06-28)
-UI/UX — Design System unificato Company/Warehouse/POS Client, Toggle "Show inactive", Fix Signal ngModel
+UI/UX — Design System unificato, Toggle "Show inactive", Confirm Dialog, Fix Reactivate
 Design System SCSS coerente su CompanyComponent, WarehouseComponent, PosClientComponent
 Variabili condivise (colori, shadow, radius, transition), card-list grid, form-card, filter-bar
 Badge active/inactive, btn-primary/btn-secondary/btn-icon, empty-state
@@ -14,6 +14,13 @@ Fix ngModel su signal: pattern [ngModel]="signal()" + (ngModelChange)="signal.se
 Applicato a select Company, checkbox Show inactive, form inputs
 Warehouse card: mostra POS Clients count, Address, Phone
 POS Client card: hardware ID in <code>
+ConfirmDialogService + ConfirmDialogComponent: modale personalizzata per conferma azioni
+Sostituisce confirm() nativo del browser su Company, Warehouse, POS Client
+LayoutComponent importa ConfirmDialogComponent (globale)
+Reactivate fix: Company/Warehouse inviano solo { isActive: true } invece di spreadare oggetto completo
+Backend: CompaniesService.update() e WarehousesService.update() filtrano campi relazioni
+Rimosso warehouses, posClients, company, inventory, createdAt, updatedAt, id dal DTO Prisma
+POS Client usa endpoint dedicato PATCH /pos-clients/:id/reactivate (gia' esistente)
 Company card: layout page-header con titolo + bottone New
 UI/UX — Toast Notifications, Menu Laterale, Ruoli, Collegamento Ruoli-Utenti
 ToastService custom standalone (zero dipendenze esterne) con signal()
@@ -425,6 +432,11 @@ Frontend: Design System SCSS unificato Company/Warehouse/POS Client (2026-06-28)
 Frontend: Toggle "Show inactive" su Company/Warehouse/POS Client (2026-06-28)
 Backend: WarehousesService.findAll() ritorna tutti (attivi + inattivi) (2026-06-28)
 Frontend: Fix ngModel su signal — pattern [ngModel] + (ngModelChange) (2026-06-28)
+Frontend: ConfirmDialogService + ConfirmDialogComponent modale personalizzata (2026-06-28)
+Backend: CompaniesService.update() filtra campi relazioni (warehouses, posClients, createdAt, updatedAt) (2026-06-28)
+Backend: WarehousesService.update() filtra campi relazioni (company, posClients, inventory, createdAt, updatedAt) (2026-06-28)
+Frontend: Reactivate Company/Warehouse invia solo { isActive: true } (2026-06-28)
+Frontend: Reactivate POS Client usa endpoint dedicato PATCH /pos-clients/:id/reactivate (2026-06-28)
 Cosa manca / Roadmap 🚧
 Fase 1: Refactor architettura (IN CORSO)
 ✅ Schema Prisma: eliminata Store, arricchita Company, aggiornate FK
@@ -522,4 +534,4 @@ Come usare questo file nelle nuove chat
 Quando riapri una nuova sessione, fornisci questo link:
 https://raw.githubusercontent.com/LorisLancia/POS-Enterprise-Backend-NestJs/main/PROJECT_CONTEXT.md
 E digita: "Leggi il PROJECT_CONTEXT.md e aggiorniamo."
-Generato il 2026-06-28. Modifica e aggiorna liberamente.
+Generato il 2026-06-28. Modifica e agg
