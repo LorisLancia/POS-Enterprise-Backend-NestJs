@@ -82,9 +82,7 @@ export class AuthService {
     };
   }
 
-  // ===================== NUOVO: Admin Companies =====================
   async getAdminCompanies(username: string, pin: string) {
-    // Trova l'utente per username (senza companyId specifico — admin può gestire più company)
     const users = await this.prisma.user.findMany({
       where: {
         username,
@@ -97,7 +95,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Verifica PIN per ogni user trovato (dovrebbe essere lo stesso username in company diverse)
     let adminUser = null;
     for (const user of users) {
       const pinValid = await bcrypt.compare(pin, user.pinHash);
@@ -111,7 +108,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Verifica che sia admin
     const isAdmin =
       adminUser.role.name === 'admin' ||
       (adminUser.role.permissions as string[])?.includes('*');
@@ -120,7 +116,6 @@ export class AuthService {
       throw new UnauthorizedException('Admin access required');
     }
 
-    // Ritorna tutte le company attive (admin può configurare qualsiasi POS)
     const companies = await this.prisma.company.findMany({
       where: { isActive: true },
       select: { id: true, name: true },
@@ -132,6 +127,7 @@ export class AuthService {
   async generateMachineToken(hardwareId: string, posClientId: number) {
     const client = await this.prisma.pOSClient.findFirst({
       where: { id: posClientId, hardwareId, isActive: true },
+      include: { company: true },
     });
 
     if (!client) {
@@ -142,6 +138,7 @@ export class AuthService {
       sub: posClientId,
       type: 'machine',
       hardwareId,
+      companyId: client.companyId,
     };
 
     return {

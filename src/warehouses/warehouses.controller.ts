@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { WarehousesService } from './warehouses.service';
 import { CreateWarehouseDto, UpdateWarehouseDto } from './dto/warehouse.dto';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('warehouses')
 export class WarehousesController {
@@ -22,6 +23,7 @@ export class WarehousesController {
   }
 
   @Get()
+  @Public()
   findAll(@Query('companyId', ParseIntPipe) companyId: number) {
     return this.service.findAll(companyId);
   }
