@@ -15,7 +15,7 @@ export class WarehousesService {
 
   async findAll(companyId: number) {
     return this.prisma.warehouse.findMany({
-      where: { companyId, isActive: true },
+      where: { companyId },
       include: { company: true, posClients: { where: { isActive: true } } },
     });
   }

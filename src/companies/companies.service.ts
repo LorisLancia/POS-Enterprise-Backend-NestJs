@@ -12,7 +12,7 @@ export class CompaniesService {
 
   async findAll() {
     return this.prisma.company.findMany({
-      where: { isActive: true },
+      // where: {  },
       include: {
         warehouses: { where: { isActive: true } },
         posClients: { where: { isActive: true } },
