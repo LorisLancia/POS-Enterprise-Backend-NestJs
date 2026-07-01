@@ -531,3 +531,30 @@ https://raw.githubusercontent.com/LorisLancia/POS-Enterprise-Backend-NestJs/main
 E digita: "Leggi il PROJECT_CONTEXT.md e aggiorniamo."
 
 Generato il 2026-07-01. Modifica e aggiorna liberamente.
+
+## Cosa è stato fatto oggi (2026-07-01)
+
+### Backend
+
+- AddonGroupsModule: CRUD completo con endpoint /addon-groups
+- Schema Prisma: nuovi modelli AddonGroup, AddonGroupItem, ProductAddon con groupId
+- ProductsService: create/update usano addonGroupIds[] invece di addon inline
+- ModifierGroupsService: aggiunto metodo update() con transazione Prisma
+- ModifierGroupsController: aggiunto PATCH /modifier-groups/:id
+- MaterialsService.findAll(): rimosso filtro isActive (ritorna tutti come Company/Warehouse)
+- Migration: npx prisma migrate reset --force per allineare DB
+
+### Frontend
+
+- MaterialsComponent: refactor completo con Design System (filter-bar, toggle inactive,
+  search, ConfirmDialog, Toast, formData signal, card layout)
+- ProductsComponent: aggiunto showInactive, searchTerm, filteredProducts, filter-bar,
+  badge status, ConfirmDialog, Toast
+- AddonGroupsComponent: aggiunto showInactive, searchTerm, filteredGroups, filter-bar,
+  badge status, ConfirmDialog, Toast, edit form completo
+- ModifierGroupsComponent: refactor completo con Design System (formData signal,
+  showInactive, searchTerm, filteredGroups, filter-bar, badge status, ConfirmDialog,
+  Toast, edit form completo)
+- LayoutComponent: aggiunta voce "Addon Groups" nel menu Catalog (icona fa-puzzle-piece)
+- ModifierGroupsService: aggiunto metodo update()
+- Design System SCSS unificato su Products, AddonGroups, ModifierGroups, Materials

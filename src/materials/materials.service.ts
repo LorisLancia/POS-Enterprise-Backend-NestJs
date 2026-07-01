@@ -32,7 +32,7 @@ export class MaterialsService {
 
   async findAll(companyId: number) {
     return this.prisma.material.findMany({
-      where: { companyId, isActive: true },
+      where: { companyId },
       include: { units: true },
       orderBy: { name: 'asc' },
     });
