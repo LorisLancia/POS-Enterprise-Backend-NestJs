@@ -1,6 +1,6 @@
 POS Enterprise - Project Context
 File di contesto condiviso per mantenere la continuita' tra sessioni di lavoro. Aggiorna la sezione "Ultimo aggiornamento" ogni volta che modifichi qualcosa.
-Ultimo aggiornamento: 2026-07-02
+Ultimo aggiornamento: 2026-07-02 02:09
 Cosa e' stato fatto oggi (2026-07-02)
 Allineamento PROJECT_CONTEXT.md
 Rilevato disallineamento tra PROJECT_CONTEXT.md e stato reale del repo
@@ -9,6 +9,9 @@ StartingBalanceComponent spostato da features/suppliers/ a features/inventory/st
 PurchaseOrdersComponent spostato da features/purchase-orders/ a features/inventory/purchase-orders/
 Tradotti tutti i testi italiani in Suppliers, Starting Balance, Purchase Orders -> inglese
 Aggiunto filtro materiali attivi (isActive) in Starting Balance e Purchase Orders loadMaterials()
+Fix tipi PurchaseOrdersComponent: scomposto form POItem in 4 signal separati (materialId, unitId, quantity, unitPrice) per evitare errori TypeScript con Partial<POItemRequest> -> POItemRequest[]
+Fix allineamento modelli PurchaseOrder: total (non totalAmount), unitPrice (non unitCost), unit: string (non unitId) nel POItem; unitId: number nel POItemRequest DTO
+Fix service calls: suppliersService.getAll(1) con companyId, poService.receive(id, data) con ReceivePurchaseOrderRequest
 Aggiunto getStatusLabel() in Purchase Orders per tradurre gli stati dell'ordine
 Stack tecnologico
 Table
@@ -455,6 +458,8 @@ Frontend: Routes /suppliers, /inventory/starting-balance, /inventory/purchase-or
 Frontend: Suppliers, Starting Balance, Purchase Orders — tutti i testi tradotti in inglese (2026-07-02)
 Frontend: Starting Balance e Purchase Orders — filtro materiali attivi (isActive) in loadMaterials() (2026-07-02)
 Frontend: PurchaseOrdersComponent — metodo getStatusLabel() per tradurre stati ordine (2026-07-02)
+Frontend: PurchaseOrdersComponent — fix tipi POItemRequest con signal separati per form items (2026-07-02)
+Frontend: PurchaseOrdersComponent — fix allineamento modelli (total, unitPrice, unit vs unitId) (2026-07-02)
 Cosa manca / Roadmap 🚧
 Fase 1: Refactor architettura ✅ COMPLETATA
 ✅ Schema Prisma: eliminata Store, arricchita Company, aggiornate FK
