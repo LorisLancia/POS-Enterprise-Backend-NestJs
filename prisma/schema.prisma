@@ -153,14 +153,15 @@ model UserSession {
 
 // ==================== MATERIALI ====================
 model Material {
-  id          Int      @id @default(autoincrement())
-  companyId   Int      @map("company_id")
-  name        String
-  description String?
-  category    String?
-  minStock    Decimal? @map("min_stock") @db.Decimal(12, 4)
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id                Int      @id @default(autoincrement())
+  companyId         Int      @map("company_id")
+  name              String
+  description       String?
+  category          String?
+  minStock          Decimal? @map("min_stock") @db.Decimal(12, 4)
+  lastPurchasePrice Decimal? @map("last_purchase_price") @db.Decimal(12, 4)
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   company         Company                @relation(fields: [companyId], references: [id])
   units           MaterialUnit[]

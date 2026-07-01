@@ -12,6 +12,9 @@ import { PosClientsModule } from './pos-clients/pos-clients.module';
 import { ModifierGroupsModule } from './modifier-groups/modifier-groups.module';
 import { RolesModule } from './roles/roles.module';
 import { AddonGroupsModule } from './addon-groups/addon-groups.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
+import { InventoryModule } from './Inventory/inventory.module';
+import { PurchaseOrdersModule } from './purchase-order/purchase-orders.module';
 
 // ... dentro @Module({ imports: [ ... ] })
 // Aggiungi ProductCategoriesModule alla lista
@@ -31,6 +34,9 @@ import { AddonGroupsModule } from './addon-groups/addon-groups.module';
     ModifierGroupsModule,
     RolesModule,
     AddonGroupsModule,
+    PurchaseOrdersModule,
+    SuppliersModule,
+    InventoryModule,
   ],
 })
 export class AppModule {}
