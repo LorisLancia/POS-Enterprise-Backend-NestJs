@@ -44,43 +44,6 @@ class ProductVariantDto {
   recipes?: ProductRecipeDto[];
 }
 
-class ProductAddonItemDto {
-  @IsInt()
-  addonProductId: number;
-
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @IsOptional()
-  quantityValue?: number;
-
-  @IsInt()
-  @IsOptional()
-  sortOrder?: number;
-
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsOptional()
-  @Type(() => Number)
-  price?: number;
-}
-
-class ProductAddonDto {
-  @IsString()
-  name: string;
-
-  @IsInt()
-  @IsOptional()
-  maxQuantity?: number;
-
-  @IsInt()
-  @IsOptional()
-  sortOrder?: number;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductAddonItemDto)
-  @IsOptional()
-  items?: ProductAddonItemDto[];
-}
-
 export class CreateProductDto {
   @IsString()
   name: string;
@@ -127,13 +90,12 @@ export class CreateProductDto {
   variants?: ProductVariantDto[];
 
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductAddonDto)
+  @IsInt({ each: true })
   @IsOptional()
-  addons?: ProductAddonDto[];
+  modifierGroupIds?: number[];
 
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()
-  modifierGroupIds?: number[];
+  addonGroupIds?: number[];
 }

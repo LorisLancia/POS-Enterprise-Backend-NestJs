@@ -35,7 +35,6 @@ export class ProductsService {
             },
           });
 
-          // Ricette specifiche per questa variante
           if (v.recipes?.length) {
             await tx.productRecipe.createMany({
               data: v.recipes.map((r) => ({
@@ -51,27 +50,15 @@ export class ProductsService {
         }
       }
 
-      // 3. Crea addon
-      if (dto.addons?.length) {
-        for (const a of dto.addons) {
-          await tx.productAddon.create({
-            data: {
-              productId: product.id,
-              name: a.name,
-              maxQuantity: a.maxQuantity ?? 0,
-              sortOrder: a.sortOrder ?? 0,
-              items: {
-                create:
-                  a.items?.map((item) => ({
-                    addonProductId: item.addonProductId,
-                    quantityValue: item.quantityValue ?? 1,
-                    price: item.price,
-                    sortOrder: item.sortOrder ?? 0,
-                  })) || [],
-              },
-            },
-          });
-        }
+      // 3. Assegna addon groups
+      if (dto.addonGroupIds?.length) {
+        await tx.productAddon.createMany({
+          data: dto.addonGroupIds.map((gid) => ({
+            productId: product.id,
+            groupId: gid,
+            sortOrder: 0,
+          })),
+        });
       }
 
       // 4. Assegna modifier groups
@@ -93,10 +80,20 @@ export class ProductsService {
           variants: true,
           recipes: { include: { material: { include: { units: true } } } },
           modifiers: { include: { group: { include: { options: true } } } },
-          addons: {
+          productAddons: {
+            where: { isActive: true },
             include: {
-              items: { include: { addonProduct: true } },
+              group: {
+                include: {
+                  items: {
+                    where: { isActive: true },
+                    include: { addonProduct: true },
+                    orderBy: { sortOrder: 'asc' },
+                  },
+                },
+              },
             },
+            orderBy: { sortOrder: 'asc' },
           },
         },
       });
@@ -111,13 +108,17 @@ export class ProductsService {
         variants: true,
         recipes: { include: { material: { include: { units: true } } } },
         modifiers: { include: { group: { include: { options: true } } } },
-        addons: {
+        productAddons: {
           where: { isActive: true },
           include: {
-            items: {
-              where: { isActive: true },
-              include: { addonProduct: true },
-              orderBy: { sortOrder: 'asc' },
+            group: {
+              include: {
+                items: {
+                  where: { isActive: true },
+                  include: { addonProduct: true },
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
             },
           },
           orderBy: { sortOrder: 'asc' },
@@ -135,13 +136,17 @@ export class ProductsService {
         variants: true,
         recipes: { include: { material: { include: { units: true } } } },
         modifiers: { include: { group: { include: { options: true } } } },
-        addons: {
+        productAddons: {
           where: { isActive: true },
           include: {
-            items: {
-              where: { isActive: true },
-              include: { addonProduct: true },
-              orderBy: { sortOrder: 'asc' },
+            group: {
+              include: {
+                items: {
+                  where: { isActive: true },
+                  include: { addonProduct: true },
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
             },
           },
           orderBy: { sortOrder: 'asc' },
@@ -179,7 +184,6 @@ export class ProductsService {
           dto.variants.filter((v) => v.id).map((v) => v.id!),
         );
 
-        // Soft delete varianti rimosse
         for (const ev of existing) {
           if (!dtoIds.has(ev.id)) {
             await tx.productVariant.update({
@@ -189,7 +193,6 @@ export class ProductsService {
           }
         }
 
-        // Upsert varianti
         for (const v of dto.variants) {
           let variantId: number;
           if (v.id && existingIds.has(v.id)) {
@@ -214,7 +217,6 @@ export class ProductsService {
             variantId = newVariant.id;
           }
 
-          // Sostituisci ricette per questa variante
           await tx.productRecipe.deleteMany({
             where: { productId: id, variantId },
           });
@@ -232,32 +234,21 @@ export class ProductsService {
           }
         }
 
-        // Cancella ricette del prodotto base (variantId = null) — non più usate con approccio B
         await tx.productRecipe.deleteMany({
           where: { productId: id, variantId: null },
         });
       }
 
-      // 3. Sostituisci addon
-      if (dto.addons !== undefined) {
+      // 3. Sostituisci addon groups
+      if (dto.addonGroupIds !== undefined) {
         await tx.productAddon.deleteMany({ where: { productId: id } });
-        for (const a of dto.addons) {
-          await tx.productAddon.create({
-            data: {
+        if (dto.addonGroupIds.length > 0) {
+          await tx.productAddon.createMany({
+            data: dto.addonGroupIds.map((gid) => ({
               productId: id,
-              name: a.name,
-              maxQuantity: a.maxQuantity ?? 0,
-              sortOrder: a.sortOrder ?? 0,
-              items: {
-                create:
-                  a.items?.map((item) => ({
-                    addonProductId: item.addonProductId,
-                    quantityValue: item.quantityValue ?? 1,
-                    price: item.price,
-                    sortOrder: item.sortOrder ?? 0,
-                  })) || [],
-              },
-            },
+              groupId: gid,
+              sortOrder: 0,
+            })),
           });
         }
       }
@@ -284,10 +275,20 @@ export class ProductsService {
           variants: true,
           recipes: { include: { material: { include: { units: true } } } },
           modifiers: { include: { group: { include: { options: true } } } },
-          addons: {
+          productAddons: {
+            where: { isActive: true },
             include: {
-              items: { include: { addonProduct: true } },
+              group: {
+                include: {
+                  items: {
+                    where: { isActive: true },
+                    include: { addonProduct: true },
+                    orderBy: { sortOrder: 'asc' },
+                  },
+                },
+              },
             },
+            orderBy: { sortOrder: 'asc' },
           },
         },
       });
@@ -301,7 +302,6 @@ export class ProductsService {
     });
   }
 
-  // POS Sync Endpoint
   async getProductsForPOS(companyId: number) {
     return this.prisma.product.findMany({
       where: { companyId, isActive: true },
@@ -315,19 +315,23 @@ export class ProductsService {
               include: {
                 options: {
                   where: { isActive: true },
-                  include: { material: true }, // ← AGGIUNGI QUESTA RIGA
+                  include: { material: true },
                 },
               },
             },
           },
         },
-        addons: {
+        productAddons: {
           where: { isActive: true },
           include: {
-            items: {
-              where: { isActive: true },
-              include: { addonProduct: true },
-              orderBy: { sortOrder: 'asc' },
+            group: {
+              include: {
+                items: {
+                  where: { isActive: true },
+                  include: { addonProduct: true },
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
             },
           },
           orderBy: { sortOrder: 'asc' },

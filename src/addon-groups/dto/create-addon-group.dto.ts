@@ -1,19 +1,19 @@
 import {
-  IsArray,
-  IsBoolean,
-  IsNumber,
-  IsOptional,
   IsString,
+  IsOptional,
+  IsInt,
+  IsArray,
   ValidateNested,
+  IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class UpdateProductAddonItemDto {
-  @IsNumber()
+class AddonGroupItemDto {
+  @IsInt()
   addonProductId: number;
 
+  @IsNumber({ maxDecimalPlaces: 4 })
   @IsOptional()
-  @IsNumber()
   quantityValue?: number;
 
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -21,31 +21,26 @@ export class UpdateProductAddonItemDto {
   @Type(() => Number)
   price?: number;
 
+  @IsInt()
   @IsOptional()
-  @IsNumber()
   sortOrder?: number;
 }
 
-export class UpdateProductAddonDto {
-  @IsOptional()
+export class CreateAddonGroupDto {
   @IsString()
-  name?: string;
+  name: string;
 
+  @IsInt()
   @IsOptional()
-  @IsNumber()
   maxQuantity?: number;
 
+  @IsInt()
   @IsOptional()
-  @IsNumber()
   sortOrder?: number;
 
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateProductAddonItemDto)
-  items?: UpdateProductAddonItemDto[];
+  @Type(() => AddonGroupItemDto)
+  @IsOptional()
+  items?: AddonGroupItemDto[];
 }

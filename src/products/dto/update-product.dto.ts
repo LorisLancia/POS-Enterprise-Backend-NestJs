@@ -28,7 +28,7 @@ class ProductRecipeDto {
 class ProductVariantDto {
   @IsInt()
   @IsOptional()
-  id?: number; // ← per l'upsert in edit
+  id?: number;
 
   @IsString()
   @IsOptional()
@@ -46,43 +46,6 @@ class ProductVariantDto {
   @Type(() => ProductRecipeDto)
   @IsOptional()
   recipes?: ProductRecipeDto[];
-}
-
-class ProductAddonItemDto {
-  @IsInt()
-  addonProductId: number;
-
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @IsOptional()
-  quantityValue?: number;
-
-  @IsNumber({ maxDecimalPlaces: 2 }) // ← AGGIUNGI
-  @IsOptional()
-  @Type(() => Number)
-  price?: number;
-
-  @IsInt()
-  @IsOptional()
-  sortOrder?: number;
-}
-
-class ProductAddonDto {
-  @IsString()
-  name: string;
-
-  @IsInt()
-  @IsOptional()
-  maxQuantity?: number;
-
-  @IsInt()
-  @IsOptional()
-  sortOrder?: number;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductAddonItemDto)
-  @IsOptional()
-  items?: ProductAddonItemDto[];
 }
 
 export class UpdateProductDto {
@@ -114,14 +77,6 @@ export class UpdateProductDto {
   @IsOptional()
   allowDecimalQty?: boolean;
 
-  @IsString()
-  @IsOptional()
-  barcode?: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
@@ -133,13 +88,12 @@ export class UpdateProductDto {
   variants?: ProductVariantDto[];
 
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductAddonDto)
+  @IsInt({ each: true })
   @IsOptional()
-  addons?: ProductAddonDto[];
+  modifierGroupIds?: number[];
 
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()
-  modifierGroupIds?: number[];
+  addonGroupIds?: number[];
 }
