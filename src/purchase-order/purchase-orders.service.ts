@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
@@ -23,7 +27,9 @@ export class PurchaseOrdersService {
     });
     if (!supplier) throw new NotFoundException('Supplier not found');
     if (supplier.companyId !== warehouse.companyId) {
-      throw new BadRequestException('Supplier does not belong to the same company');
+      throw new BadRequestException(
+        'Supplier does not belong to the same company',
+      );
     }
 
     // Calcola totale
@@ -33,10 +39,14 @@ export class PurchaseOrdersService {
         where: { id: item.materialId },
         include: { units: true },
       });
-      if (!material) throw new NotFoundException(`Material ${item.materialId} not found`);
+      if (!material)
+        throw new NotFoundException(`Material ${item.materialId} not found`);
 
-      const unit = material.units.find(u => u.id === item.unitId);
-      if (!unit) throw new NotFoundException(`Unit ${item.unitId} not found for material ${item.materialId}`);
+      const unit = material.units.find((u) => u.id === item.unitId);
+      if (!unit)
+        throw new NotFoundException(
+          `Unit ${item.unitId} not found for material ${item.materialId}`,
+        );
 
       total += item.quantity * item.unitPrice;
     }
@@ -50,7 +60,7 @@ export class PurchaseOrdersService {
         total,
         status: 'draft',
         items: {
-          create: items.map(item => ({
+          create: items.map((item) => ({
             materialId: item.materialId,
             unit: 'PC' as any, // Sostituire con lookup da unitId
             quantity: item.quantity,
@@ -68,6 +78,7 @@ export class PurchaseOrdersService {
       where: { warehouseId },
       include: {
         supplier: true,
+        warehouse: true,
         items: { include: { material: true } },
         user: { select: { fullName: true } },
       },
@@ -94,9 +105,72 @@ export class PurchaseOrdersService {
     if (po.status !== 'draft') {
       throw new BadRequestException('Cannot update a non-draft purchase order');
     }
+
+    const { items } = dto;
+    const warehouseId = dto.warehouseId ?? po.warehouseId;
+    const supplierId = dto.supplierId ?? po.supplierId;
+
+    // Se ci sono items, sostituiamo tutti (delete + create in transazione)
+    if (items && items.length > 0) {
+      return this.prisma.$transaction(async (tx) => {
+        // 1. Cancella item esistenti
+        await tx.pOItem.deleteMany({ where: { poId: id } });
+
+        // 2. Calcola totale e prepara nuovi item con unità reali
+        let total = 0;
+        const createItems: any[] = [];
+
+        for (const item of items) {
+          const material = await tx.material.findUnique({
+            where: { id: item.materialId },
+            include: { units: true },
+          });
+          if (!material) {
+            throw new NotFoundException(
+              `Material ${item.materialId} not found`,
+            );
+          }
+
+          const unit = material.units.find((u: any) => u.id === item.unitId);
+          if (!unit) {
+            throw new NotFoundException(
+              `Unit ${item.unitId} not found for material ${item.materialId}`,
+            );
+          }
+
+          total += item.quantity * item.unitPrice;
+          createItems.push({
+            materialId: item.materialId,
+            unit: unit.unit, // <-- FIX: usa l'unità reale dal DB, non 'PC'
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            receivedQty: 0,
+          });
+        }
+
+        // 3. Aggiorna il PO con i nuovi item
+        return tx.purchaseOrder.update({
+          where: { id },
+          data: {
+            warehouseId,
+            supplierId,
+            notes: dto.notes,
+            total,
+            items: { create: createItems },
+          },
+          include: { items: { include: { material: true } }, supplier: true },
+        });
+      });
+    }
+
+    // Nessun item, aggiorna solo i campi base
     return this.prisma.purchaseOrder.update({
       where: { id },
-      data: dto,
+      data: {
+        warehouseId,
+        supplierId,
+        notes: dto.notes,
+      },
       include: { items: { include: { material: true } }, supplier: true },
     });
   }
@@ -107,20 +181,23 @@ export class PurchaseOrdersService {
       throw new BadRequestException('Purchase order already fully received');
     }
     if (po.status === 'cancelled') {
-      throw new BadRequestException('Cannot receive a cancelled purchase order');
+      throw new BadRequestException(
+        'Cannot receive a cancelled purchase order',
+      );
     }
 
     const { receivedBy, items } = dto;
 
     return this.prisma.$transaction(async (tx) => {
       for (const item of items) {
-        const poItem = po.items.find(i => i.id === item.poItemId);
-        if (!poItem) throw new NotFoundException(`PO Item ${item.poItemId} not found`);
+        const poItem = po.items.find((i) => i.id === item.poItemId);
+        if (!poItem)
+          throw new NotFoundException(`PO Item ${item.poItemId} not found`);
 
         const newReceived = Number(poItem.receivedQty) + item.receivedQty;
         if (newReceived > Number(poItem.quantity)) {
           throw new BadRequestException(
-            `Received quantity (${newReceived}) exceeds ordered quantity (${poItem.quantity}) for item ${poItem.material.name}`
+            `Received quantity (${newReceived}) exceeds ordered quantity (${poItem.quantity}) for item ${poItem.material.name}`,
           );
         }
 
@@ -177,13 +254,15 @@ export class PurchaseOrdersService {
       // 5. Aggiorna status PO
       const updatedItems = await tx.pOItem.findMany({ where: { poId: id } });
       const allReceived = updatedItems.every(
-        i => Number(i.receivedQty) >= Number(i.quantity)
+        (i) => Number(i.receivedQty) >= Number(i.quantity),
       );
-      const anyReceived = updatedItems.some(
-        i => Number(i.receivedQty) > 0
-      );
+      const anyReceived = updatedItems.some((i) => Number(i.receivedQty) > 0);
 
-      const newStatus = allReceived ? 'received' : anyReceived ? 'partial' : 'draft';
+      const newStatus = allReceived
+        ? 'received'
+        : anyReceived
+          ? 'partial'
+          : 'draft';
 
       return tx.purchaseOrder.update({
         where: { id },
@@ -196,7 +275,9 @@ export class PurchaseOrdersService {
   async cancel(id: number) {
     const po = await this.findOne(id);
     if (po.status === 'received') {
-      throw new BadRequestException('Cannot cancel a fully received purchase order');
+      throw new BadRequestException(
+        'Cannot cancel a fully received purchase order',
+      );
     }
     return this.prisma.purchaseOrder.update({
       where: { id },
